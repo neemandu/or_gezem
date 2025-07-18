@@ -531,3 +531,58 @@ export const VALIDATION_PATTERNS = {
   phone: /^(\+972|0)[2-9][0-9]{7,8}$/,
   currency: /^[A-Z]{3}$/,
 } as const;
+
+// ====================================
+// SUPABASE DATABASE INTERFACE
+// ====================================
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: User;
+        Insert: UserInsert;
+        Update: UserUpdate;
+      };
+      settlements: {
+        Row: Settlement;
+        Insert: SettlementInsert;
+        Update: SettlementUpdate;
+      };
+      container_types: {
+        Row: ContainerType;
+        Insert: ContainerTypeInsert;
+        Update: ContainerTypeUpdate;
+      };
+      settlement_tank_pricing: {
+        Row: SettlementTankPricing;
+        Insert: SettlementTankPricingInsert;
+        Update: SettlementTankPricingUpdate;
+      };
+      reports: {
+        Row: Report;
+        Insert: ReportInsert;
+        Update: ReportUpdate;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: NotificationInsert;
+        Update: NotificationUpdate;
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      [_ in never]: never;
+    };
+    Enums: {
+      user_role: UserRole;
+      notification_type: NotificationType;
+      notification_status: NotificationStatus;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+}
