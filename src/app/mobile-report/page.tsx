@@ -2,10 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 
-export default function Home() {
+export default function MobileReportPage() {
   return (
     <div>
-      <Button>Click me</Button>
+      <h1>Mobile Report</h1>
     </div>
   );
 }

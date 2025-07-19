@@ -39,14 +39,11 @@ function validateEnvironmentVariables(): ValidationResult {
 
   // Required environment variables
   const requiredVars = [
-    'NODE_ENV',
+    'NEXT_PUBLIC_NODE_ENV',
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'DATABASE_URL',
-    'GREEN_API_INSTANCE_ID',
-    'GREEN_API_ACCESS_TOKEN',
-    'NEXTAUTH_SECRET',
+    'NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY',
+    'NEXT_PUBLIC_DATABASE_URL',
   ];
 
   // Check for missing required variables
@@ -65,39 +62,13 @@ function validateEnvironmentVariables(): ValidationResult {
     errors.push('NEXT_PUBLIC_SUPABASE_URL must be a valid HTTPS URL');
   }
 
-  if (env.DATABASE_URL && !env.DATABASE_URL.startsWith('postgresql://')) {
-    errors.push('DATABASE_URL must be a valid PostgreSQL connection string');
-  }
-
-  if (env.NEXTAUTH_SECRET && env.NEXTAUTH_SECRET.length < 32) {
-    errors.push('NEXTAUTH_SECRET must be at least 32 characters long');
-  }
-
-  // Development-specific warnings
-  if (isDevelopment) {
-    if (!env.NEXTAUTH_URL) {
-      warnings.push('NEXTAUTH_URL is recommended for development');
-    }
-    if (!env.WEBHOOK_SECRET) {
-      warnings.push('WEBHOOK_SECRET is recommended for webhook validation');
-    }
-  }
-
-  // Production-specific validations
-  if (isProduction) {
-    if (!env.NEXTAUTH_URL) {
-      errors.push('NEXTAUTH_URL is required in production');
-    }
-    if (!env.WEBHOOK_SECRET) {
-      warnings.push(
-        'WEBHOOK_SECRET is recommended for production webhook security'
-      );
-    }
-    if (!env.ENCRYPTION_KEY) {
-      warnings.push(
-        'ENCRYPTION_KEY is recommended for sensitive data encryption'
-      );
-    }
+  if (
+    env.NEXT_PUBLIC_DATABASE_URL &&
+    !env.NEXT_PUBLIC_DATABASE_URL.startsWith('postgresql://')
+  ) {
+    errors.push(
+      'NEXT_PUBLIC_DATABASE_URL must be a valid PostgreSQL connection string'
+    );
   }
 
   return {
@@ -132,14 +103,17 @@ function validateSupabaseConfig(): ValidationResult {
     }
 
     if (
-      env.SUPABASE_SERVICE_ROLE_KEY &&
-      env.SUPABASE_SERVICE_ROLE_KEY.length < 100
+      env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY &&
+      env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY.length < 100
     ) {
       warnings.push('Supabase service role key appears to be too short');
     }
 
     // Check if keys are the same (common mistake)
-    if (env.NEXT_PUBLIC_SUPABASE_ANON_KEY === env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY ===
+      env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY
+    ) {
       errors.push('Supabase anon key and service role key should be different');
     }
   } catch (error) {

@@ -16,9 +16,9 @@ import type {
 
 // Configuration object
 const greenApiConfig: GreenApiConfig = {
-  instanceId: env.GREEN_API_INSTANCE_ID,
-  accessToken: env.GREEN_API_ACCESS_TOKEN,
-  baseUrl: env.NEXT_PUBLIC_GREEN_API_BASE_URL,
+  instanceId: process.env.NEXT_PUBLIC_GREEN_API_INSTANCE_ID || '',
+  accessToken: process.env.NEXT_PUBLIC_GREEN_API_ACCESS_TOKEN || '',
+  baseUrl: process.env.NEXT_PUBLIC_GREEN_API_BASE_URL || '',
 };
 
 // Create axios instance with base configuration
@@ -430,7 +430,7 @@ ${error}
 export const webhookHandler = {
   // Validate webhook signature (if using webhook secret)
   validateWebhook(payload: any, signature?: string): boolean {
-    if (!env.WEBHOOK_SECRET || !signature) return true;
+    if (!process.env.NEXT_PUBLIC_WEBHOOK_SECRET || !signature) return true;
 
     // Implement HMAC signature validation if needed
     // This is a placeholder for now
@@ -519,8 +519,21 @@ export async function checkGreenApiConnection(): Promise<
 export function validateGreenApiConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!greenApiConfig.instanceId) errors.push('Instance ID is required');
-  if (!greenApiConfig.accessToken) errors.push('Access token is required');
+  // If both credentials are missing, consider it valid (optional integration)
+  if (!greenApiConfig.instanceId && !greenApiConfig.accessToken) {
+    return {
+      valid: true,
+      errors: [],
+    };
+  }
+
+  // If only one credential is provided, both are required
+  if (!greenApiConfig.instanceId && greenApiConfig.accessToken) {
+    errors.push('Instance ID is required when Access Token is provided');
+  }
+  if (greenApiConfig.instanceId && !greenApiConfig.accessToken) {
+    errors.push('Access token is required when Instance ID is provided');
+  }
   if (!greenApiConfig.baseUrl) errors.push('Base URL is required');
 
   return {

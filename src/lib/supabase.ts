@@ -10,7 +10,7 @@ export type TypedSupabaseClient = SupabaseClient<Database>;
 const supabaseConfig: SupabaseConfig = {
   url: env.NEXT_PUBLIC_SUPABASE_URL,
   anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+  serviceRoleKey: env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
 };
 
 // Create the main Supabase client (for client-side operations)

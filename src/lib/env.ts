@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   // Application Environment
-  NODE_ENV: z.enum(['development', 'production', 'test']),
+  NEXT_PUBLIC_NODE_ENV: z.enum(['development', 'production', 'test']),
   NEXT_PUBLIC_APP_URL: z
     .string()
     .url()
@@ -14,39 +14,46 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z
     .string()
     .min(1, 'Supabase anon key is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z
+  NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY: z
     .string()
     .min(1, 'Supabase service role key is required'),
 
   // Database Configuration
-  DATABASE_URL: z.string().url('Invalid database URL'),
+  NEXT_PUBLIC_DATABASE_URL: z.string().url('Invalid database URL'),
 
   // Green API WhatsApp Integration
-  GREEN_API_INSTANCE_ID: z.string().min(1, 'Green API instance ID is required'),
-  GREEN_API_ACCESS_TOKEN: z
-    .string()
-    .min(1, 'Green API access token is required'),
-  NEXT_PUBLIC_GREEN_API_BASE_URL: z
-    .string()
-    .url()
-    .optional()
-    .default('https://api.green-api.com'),
-
-  // Security Keys
-  NEXTAUTH_SECRET: z
-    .string()
-    .min(32, 'NextAuth secret must be at least 32 characters'),
-  NEXTAUTH_URL: z.string().url().optional(),
+  // NEXT_PUBLIC_GREEN_API_INSTANCE_ID: z
+  //   .string()
+  //   .min(1, 'Green API instance ID is required')
+  //   .optional(),
+  // NEXT_PUBLIC_GREEN_API_ACCESS_TOKEN: z
+  //   .string()
+  //   .min(1, 'Green API access token is required')
+  //   .optional(),
+  // NEXT_PUBLIC_GREEN_API_BASE_URL: z
+  //   .string()
+  //   .url()
+  //   .optional()
+  //   .default('https://api.green-api.com'),
 
   // Optional configurations
-  WEBHOOK_SECRET: z.string().optional(),
-  ENCRYPTION_KEY: z.string().optional(),
+  NEXT_PUBLIC_WEBHOOK_SECRET: z.string().optional(),
+  NEXT_PUBLIC_ENCRYPTION_KEY: z.string().optional(),
 });
 
 // Validate environment variables and provide helpful error messages
 function validateEnv() {
   try {
-    return envSchema.parse(process.env);
+    const env = {
+      NEXT_PUBLIC_NODE_ENV: process.env.NEXT_PUBLIC_NODE_ENV,
+      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY:
+        process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY,
+      NEXT_PUBLIC_DATABASE_URL: process.env.NEXT_PUBLIC_DATABASE_URL,
+    };
+    return envSchema.parse(env);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const formattedErrors = error.errors
@@ -69,6 +76,6 @@ export const env = validateEnv();
 export type Env = z.infer<typeof envSchema>;
 
 // Helper function to check if we're in production
-export const isProduction = env.NODE_ENV === 'production';
-export const isDevelopment = env.NODE_ENV === 'development';
-export const isTest = env.NODE_ENV === 'test';
+export const isProduction = env.NEXT_PUBLIC_NODE_ENV === 'production';
+export const isDevelopment = env.NEXT_PUBLIC_NODE_ENV === 'development';
+export const isTest = env.NEXT_PUBLIC_NODE_ENV === 'test';

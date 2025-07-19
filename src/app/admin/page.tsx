@@ -2,10 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 
-export default function Home() {
+export default function AdminPage() {
   return (
     <div>
-      <Button>Click me</Button>
+      <h1>Admin</h1>
     </div>
   );
 }
