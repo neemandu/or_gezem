@@ -91,9 +91,6 @@ export default function Home() {
           {user.role === 'SETTLEMENT_USER' && 'משתמש יישוב'}
           {user.role === 'DRIVER' && 'נהג'}
         </p>
-        {user.settlement && (
-          <p className="text-text-secondary">יישוב: {user.settlement.name}</p>
-        )}
       </div>
 
       {/* Role-based Quick Actions */}

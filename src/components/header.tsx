@@ -121,7 +121,7 @@ export function Header() {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="text-xs">
-                    {getUserInitials(user.email)}
+                    {getUserInitials(user.email || '')}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -131,13 +131,8 @@ export function Header() {
                 <div className="flex flex-col space-y-1 leading-none">
                   <p className="font-medium text-sm">{user.email}</p>
                   <p className="text-xs text-text-secondary">
-                    {getRoleDisplayName(user.role)}
+                    {getRoleDisplayName(user.role || '')}
                   </p>
-                  {user.settlement && (
-                    <p className="text-xs text-text-secondary">
-                      {user.settlement.name}
-                    </p>
-                  )}
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -172,19 +167,14 @@ export function Header() {
                 <div className="flex items-center space-x-3 space-x-reverse p-3 rounded-lg bg-primary-gray-100">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback>
-                      {getUserInitials(user.email)}
+                      {getUserInitials(user.email || '')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{user.email}</span>
                     <span className="text-xs text-text-secondary">
-                      {getRoleDisplayName(user.role)}
+                      {getRoleDisplayName(user.role || '')}
                     </span>
-                    {user.settlement && (
-                      <span className="text-xs text-text-secondary">
-                        {user.settlement.name}
-                      </span>
-                    )}
                   </div>
                 </div>
 

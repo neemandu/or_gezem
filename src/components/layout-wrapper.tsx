@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Loading } from '@/components/loading';
+import { Toaster } from '@/components/ui/toaster';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;
@@ -138,6 +139,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     return (
       <div className="min-h-screen bg-background font-hebrew" dir="rtl">
         <main className="text-right">{children}</main>
+        <Toaster />
       </div>
     );
   }
@@ -179,6 +181,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
             </Button>
           </div>
         </main>
+        <Toaster />
       </div>
     );
   }
@@ -190,6 +193,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
       <main className="text-right">
         <div className="container mx-auto px-4 py-6">{children}</div>
       </main>
+      <Toaster />
     </div>
   );
 }

@@ -59,11 +59,10 @@ export default function UnauthorizedPage() {
                 {user.role === 'SETTLEMENT_USER' && 'משתמש יישוב'}
                 {user.role === 'DRIVER' && 'נהג'}
               </p>
-              {user.settlement && (
+              {/* {user.settlement && (
                 <p className="text-text-secondary">
                   <strong>יישוב:</strong> {user.settlement.name}
-                </p>
-              )}
+                </p> */}
             </div>
           )}
         </div>

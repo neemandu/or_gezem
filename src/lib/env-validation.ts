@@ -1,6 +1,6 @@
 import { env, isDevelopment, isProduction } from './env';
 import { validateGreenApiConfig } from './green-api';
-import { checkSupabaseConnection } from './supabase';
+import { checkSupabaseConnection } from './supabase-old';
 import { checkGreenApiConnection } from './green-api';
 import type { IntegrationError } from '../types/integrations';
 
