@@ -26,11 +26,11 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -83,22 +83,52 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+
         const {
           data: { user },
           error,
         } = await supabase.auth.getUser();
 
         if (error) {
-          // If there's an error getting the user, they're not authenticated
           console.log('No authenticated user found:', error.message);
+          if (mounted) {
+            setUser(null);
+            setSupabaseUser(null);
+          }
         } else if (user && mounted) {
           setSupabaseUser(user);
           const userProfile = await fetchUserProfile(user);
           setUser(userProfile);
+
+          // Update user metadata with role if missing
+          if (
+            userProfile &&
+            (!user.user_metadata?.role ||
+              user.user_metadata.role !== userProfile.role)
+          ) {
+            try {
+              await supabase.auth.updateUser({
+                data: { role: userProfile.role },
+              });
+            } catch (updateError) {
+              console.error('Error updating user metadata:', updateError);
+            }
+          }
+        } else {
+          if (mounted) {
+            setUser(null);
+            setSupabaseUser(null);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setError('שגיאה בטעינת המערכת');
+        if (mounted) {
+          setError('שגיאה בטעינת המערכת');
+          setUser(null);
+          setSupabaseUser(null);
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -114,6 +144,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
+      console.log(
+        'Auth state changed:',
+        event,
+        session?.user?.email || 'no user'
+      );
+
       setIsLoading(true);
       setError(null);
 
@@ -121,12 +157,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSupabaseUser(session.user);
         const userProfile = await fetchUserProfile(session.user);
         setUser(userProfile);
+
+        // Update user metadata with role if missing
+        if (
+          userProfile &&
+          (!session.user.user_metadata?.role ||
+            session.user.user_metadata.role !== userProfile.role)
+        ) {
+          try {
+            await supabase.auth.updateUser({
+              data: { role: userProfile.role },
+            });
+          } catch (updateError) {
+            console.error('Error updating user metadata:', updateError);
+          }
+        }
       } else {
         setSupabaseUser(null);
         setUser(null);
       }
 
-      setIsLoading(false);
+      if (mounted) {
+        setIsLoading(false);
+      }
     });
 
     return () => {
@@ -162,6 +215,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setSupabaseUser(data.user);
         setUser(userProfile);
+
+        // Update user metadata with role
+        try {
+          await supabase.auth.updateUser({
+            data: { role: userProfile.role },
+          });
+        } catch (updateError) {
+          console.error('Error updating user metadata:', updateError);
+        }
       }
 
       return { success: true };
@@ -176,6 +238,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       await supabase.auth.signOut();
       setUser(null);
@@ -221,6 +284,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabaseUser) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       const userProfile = await fetchUserProfile(supabaseUser);
       setUser(userProfile);
@@ -255,26 +319,17 @@ export function useAuth() {
   return context;
 }
 
-// Helper function to translate auth errors to Hebrew
-function getHebrewErrorMessage(errorMessage: string): string {
+// Helper function to get Hebrew error messages
+function getHebrewErrorMessage(error: string): string {
   const errorMap: Record<string, string> = {
-    'Invalid login credentials': 'שם משתמש או סיסמה שגויים',
-    'Email not confirmed': 'נדרש אישור כתובת מייל',
+    'Invalid login credentials': 'פרטי התחברות שגויים',
+    'Email not confirmed': 'נדרש לאמת את כתובת המייל',
     'Too many requests': 'יותר מדי ניסיונות התחברות. נסה שוב מאוחר יותר',
     'User not found': 'משתמש לא נמצא במערכת',
     'Invalid email': 'כתובת מייל לא תקינה',
     'Password should be at least 6 characters':
       'הסיסמה חייבת להכיל לפחות 6 תווים',
-    'Network error': 'שגיאת רשת. בדוק את החיבור לאינטרנט',
   };
 
-  // Try to find a matching error message
-  for (const [englishError, hebrewError] of Object.entries(errorMap)) {
-    if (errorMessage.toLowerCase().includes(englishError.toLowerCase())) {
-      return hebrewError;
-    }
-  }
-
-  // Default error message
-  return 'שגיאה בהתחברות למערכת';
+  return errorMap[error] || 'שגיאה בהתחברות למערכת';
 }

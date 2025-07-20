@@ -55,13 +55,17 @@ export default function LoginPage() {
   });
 
   // Redirect if already authenticated
-  // useEffect(() => {
-  //   if (!isLoading && user) {
-  //     const targetUrl = redirectTo || getDefaultRedirectUrl(user);
-  //     console.log('targetUrl', targetUrl);
-  //     router.push(targetUrl);
-  //   }
-  // }, [user, isLoading, redirectTo, router]);
+  useEffect(() => {
+    if (!isLoading && user) {
+      const targetUrl = redirectTo || getDefaultRedirectUrl(user);
+      console.log('User already authenticated, redirecting to:', targetUrl);
+
+      // Use window.location.href for more reliable redirect that won't be affected by router refresh
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 100);
+    }
+  }, [user, isLoading, redirectTo]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
@@ -71,9 +75,10 @@ export default function LoginPage() {
       const result = await signIn(data.email, data.password);
 
       if (result.success) {
-        const targetUrl = redirectTo || getDefaultRedirectUrl(user);
-        console.log('targetUrl', targetUrl);
-        router.push(targetUrl);
+        console.log('Login successful');
+
+        // Don't redirect immediately here - let the useEffect handle it
+        // after the auth state has properly updated
       } else {
         setError(result.error || 'שגיאה בהתחברות למערכת');
       }
@@ -91,6 +96,18 @@ export default function LoginPage() {
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="h-8 w-8 animate-spin text-green-600" />
           <p className="text-sm text-green-600 font-medium">טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render the login form if user is authenticated (redirect is in progress)
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          <p className="text-sm text-green-600 font-medium">מעביר לדף הבא...</p>
         </div>
       </div>
     );

@@ -22,10 +22,18 @@ export const supabase: TypedSupabaseClient = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'sb-auth-token',
+      flowType: 'pkce',
     },
     realtime: {
       params: {
         eventsPerSecond: 10,
+      },
+    },
+    global: {
+      headers: {
+        'x-application-name': 'or-gezem-app',
       },
     },
   }
