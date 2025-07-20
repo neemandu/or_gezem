@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
 import { env } from './env';
@@ -34,7 +34,7 @@ const createApiClient = (): AxiosInstance => {
 
 // Error handling utility for Green API operations
 function handleGreenApiError(error: any): IntegrationError {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     const axiosError = error as AxiosError;
     return {
       service: 'green-api',
