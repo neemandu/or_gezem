@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
-import { AuthSync } from '@/components/auth-sync';
+import { LayoutWrapper } from '@/components/layout-wrapper';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,8 +20,7 @@ export default function RootLayout({
     <html lang="he" dir="rtl">
       <body className={inter.className}>
         <AuthProvider>
-          <AuthSync />
-          {children}
+          <LayoutWrapper>{children}</LayoutWrapper>
         </AuthProvider>
       </body>
     </html>

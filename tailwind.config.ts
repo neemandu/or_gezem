@@ -18,6 +18,10 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        hebrew: ['Inter', 'Arial', 'sans-serif'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -27,6 +31,12 @@ const config = {
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
+          gray: {
+            100: '#F5F5F5',
+          },
+          blue: {
+            200: '#E6EEF7',
+          },
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
@@ -52,6 +62,11 @@ const config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        'text-primary': '#1F2937',
+        'text-secondary': '#6B7280',
+        success: '#10B981',
+        error: '#EF4444',
+        warning: '#F59E0B',
       },
       borderRadius: {
         lg: 'var(--radius)',

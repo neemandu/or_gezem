@@ -64,6 +64,47 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-hebrew;
+  }
+
+  /* RTL Support */
+  [dir='rtl'] {
+    text-align: right;
+  }
+
+  /* Hebrew font optimization */
+  .font-hebrew {
+    font-family: 'Inter', 'Arial', sans-serif;
+    font-feature-settings: normal;
+  }
+
+  /* RTL spacing utilities */
+  .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
+    margin-right: var(--space-x-reverse);
+    margin-left: 0;
+  }
+
+  /* Better RTL text rendering */
+  .text-right {
+    text-align: right;
+  }
+
+  /* Custom scrollbar for RTL */
+  [dir='rtl'] ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  [dir='rtl'] ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+
+  [dir='rtl'] ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+
+  [dir='rtl'] ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
   }
 }

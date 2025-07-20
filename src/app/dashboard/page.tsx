@@ -5,12 +5,10 @@ import { LogOut, User, Settings, BarChart3 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { useSettlementProtected } from '@/hooks/use-protected';
-import { getRoleDisplayName, getUserDisplayName } from '@/lib/auth-utils';
+// import { getRoleDisplayName } from '@/lib/auth-utils';
 
 export default function DashboardPage() {
-  const { user, isLoading } = useSettlementProtected();
-  const { signOut } = useAuth();
+  const { user, userRole, signOut, isLoading } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
@@ -35,8 +33,8 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect via useSettlementProtected hook
+  if (!user || !userRole) {
+    return null; // Middleware will handle redirect
   }
 
   return (
@@ -53,7 +51,7 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4 space-x-reverse">
               <div className="text-sm text-gray-700">
                 <p className="font-medium">{user.email}</p>
-                <p className="text-gray-500">{getRoleDisplayName(user.role)}</p>
+                {/* <p className="text-gray-500">{getRoleDisplayName(userRole)}</p> */}
               </div>
 
               <Button
@@ -90,28 +88,22 @@ export default function DashboardPage() {
                 </p>
                 <p>
                   <span className="font-medium">תפקיד:</span>{' '}
-                  {getRoleDisplayName(user.role)}
+                  {/* {getRoleDisplayName(userRole)} */}
                 </p>
-                {user.settlement && (
-                  <p>
-                    <span className="font-medium">יישוב:</span>{' '}
-                    {user.settlement.name}
-                  </p>
-                )}
               </div>
             </div>
 
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-3">הרשאות</h3>
               <div className="space-y-2 text-sm text-gray-600">
-                {user.role === 'ADMIN' && (
+                {userRole === 'ADMIN' && (
                   <>
                     <p>✅ גישה מלאה למערכת</p>
                     <p>✅ ניהול משתמשים ויישובים</p>
                     <p>✅ צפייה בכל הדוחות</p>
                   </>
                 )}
-                {user.role === 'SETTLEMENT_USER' && (
+                {userRole === 'SETTLEMENT_USER' && (
                   <>
                     <p>✅ צפייה בלוח בקרה</p>
                     <p>✅ צפייה בדוחות של היישוב</p>
