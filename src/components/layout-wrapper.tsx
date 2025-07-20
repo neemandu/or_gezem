@@ -42,10 +42,6 @@ const routeConfigs: RouteConfig[] = [
     allowedRoles: ['DRIVER'],
   },
   {
-    path: '/mobile-report',
-    allowedRoles: ['DRIVER'],
-  },
-  {
     path: '/settings',
     allowedRoles: ['ADMIN'],
   },

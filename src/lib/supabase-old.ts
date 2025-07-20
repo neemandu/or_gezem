@@ -163,6 +163,7 @@ export const storage = {
       maxSizeBytes?: number;
       allowedTypes?: string[];
       upsert?: boolean;
+      supabaseClient?: TypedSupabaseClient;
     }
   ) {
     try {
@@ -173,6 +174,9 @@ export const storage = {
         'image/webp',
         'image/gif',
       ];
+
+      // Use provided client or default to global client
+      const client = options?.supabaseClient || supabase;
 
       // Validate file size
       if (file.size > maxSize) {
@@ -198,7 +202,7 @@ export const storage = {
         };
       }
 
-      const { data, error } = await supabase.storage
+      const { data, error } = await client.storage
         .from(bucket)
         .upload(path, file, {
           upsert: options?.upsert ?? true,
@@ -212,19 +216,28 @@ export const storage = {
   },
 
   // Upload image with automatic path generation
-  async uploadImage(bucket: string, file: File, folder?: string) {
+  async uploadImage(
+    bucket: string,
+    file: File,
+    folder?: string,
+    supabaseClient?: TypedSupabaseClient
+  ) {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-      const uploadResult = await this.uploadFile(bucket, filePath, file);
+      const uploadResult = await this.uploadFile(bucket, filePath, file, {
+        supabaseClient,
+      });
 
       if (!uploadResult.success) {
         return uploadResult;
       }
 
-      const publicUrl = this.getPublicUrl(bucket, filePath);
+      // Use the same client for getting public URL
+      const client = supabaseClient || supabase;
+      const publicUrl = this.getPublicUrl(bucket, filePath, client);
 
       return {
         success: true as const,
@@ -239,9 +252,14 @@ export const storage = {
     }
   },
 
-  // Get public URL for a file
-  getPublicUrl(bucket: string, path: string) {
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  // Get public URL
+  getPublicUrl(
+    bucket: string,
+    path: string,
+    supabaseClient?: TypedSupabaseClient
+  ): string {
+    const client = supabaseClient || supabase;
+    const { data } = client.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   },
 

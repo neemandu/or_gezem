@@ -299,6 +299,8 @@ export async function requireAuth(request: NextRequest) {
     error,
   } = await supabase.auth.getUser();
 
+  console.log('user', user);
+
   if (error || !user) {
     throw new UnauthorizedError('Authentication required');
   }

@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   const isProtectedRoute =
     request.nextUrl.pathname.startsWith('/admin') ||
     request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/mobile-report');
+    request.nextUrl.pathname.startsWith('/report');
 
   // Redirect unauthenticated users from protected routes
   if (!user && isProtectedRoute) {
@@ -66,7 +66,7 @@ export async function updateSession(request: NextRequest) {
         url.pathname = '/dashboard';
         break;
       case 'DRIVER':
-        url.pathname = '/mobile-report';
+        url.pathname = '/report';
         break;
       default:
         url.pathname = '/dashboard';

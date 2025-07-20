@@ -10,7 +10,7 @@ export function getDefaultRedirectUrl(role: UserRole): string {
     case 'SETTLEMENT_USER':
       return '/dashboard';
     case 'DRIVER':
-      return '/mobile-report';
+      return '/report';
     default:
       return '/dashboard';
   }

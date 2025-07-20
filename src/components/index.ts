@@ -3,6 +3,9 @@ export { Header } from './header';
 export { LayoutWrapper } from './layout-wrapper';
 export { Breadcrumbs } from './breadcrumbs';
 
+// Form Components
+export { CameraInput } from './camera-input';
+
 // Auth Components
 
 // UI Components
