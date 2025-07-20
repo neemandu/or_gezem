@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Building, Users, Package } from 'lucide-react';
+import { Settings, Building, Users, Package, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 
@@ -35,6 +35,13 @@ const settingsTabs: TabItem[] = [
     href: '/settings/tanks',
     icon: Package,
     description: 'ניהול סוגי מכלים, גדלים ויחידות',
+  },
+  {
+    id: 'pricing',
+    label: 'תמחור',
+    href: '/settings/pricing',
+    icon: DollarSign,
+    description: 'ניהול מחירים עבור יישובים וסוגי מכלים',
   },
 ];
 

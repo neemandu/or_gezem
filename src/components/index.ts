@@ -41,3 +41,7 @@ export { DriverFormModal } from './driver-form-modal';
 // Tanks Management Components
 export { TanksTable } from './tanks-table';
 export { TankFormModal } from './tank-form-modal';
+
+// Pricing Management Components
+export { PricingTable } from './pricing-table';
+export { PricingFormModal } from './pricing-form-modal';

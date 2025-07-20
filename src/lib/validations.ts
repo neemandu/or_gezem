@@ -72,13 +72,22 @@ const baseReportSchema = z.object({
   notification_sent: z.boolean().default(false),
 });
 
-export const createReportSchema = baseReportSchema.refine((data) => {
-  // If tank_id is provided, use it as container_type_id
-  if (data.tank_id && !data.container_type_id) {
-    data.container_type_id = data.tank_id;
-  }
-  return true;
-});
+// Create schema with optional pricing fields (will be calculated automatically)
+export const createReportSchema = baseReportSchema
+  .partial({ unit_price: true })
+  .extend({
+    total_price: z
+      .number()
+      .nonnegative('מחיר כולל חייב להיות אי-שלילי')
+      .optional(),
+  })
+  .refine((data) => {
+    // If tank_id is provided, use it as container_type_id
+    if (data.tank_id && !data.container_type_id) {
+      data.container_type_id = data.tank_id;
+    }
+    return true;
+  });
 
 export const updateReportSchema = baseReportSchema.partial();
 
@@ -114,6 +123,24 @@ export const reportFiltersSchema = paginationSchema.extend({
   condition: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
 });
 
+// Pricing validation schemas (matches settlement_tank_pricing table)
+export const createPricingSchema = z.object({
+  settlement_id: z.string().uuid('מזהה יישוב לא תקין'),
+  container_type_id: z.string().uuid('מזהה סוג מכל לא תקין'),
+  price: z.number().positive('מחיר חייב להיות גדול מ-0'),
+  currency: z.string().length(3, 'מטבע חייב להיות 3 תווים').default('ILS'),
+  is_active: z.boolean().default(true),
+});
+
+export const updatePricingSchema = createPricingSchema.partial();
+
+export const pricingFiltersSchema = queryParamsSchema.extend({
+  settlement_id: z.string().uuid('מזהה יישוב לא תקין').optional(),
+  container_type_id: z.string().uuid('מזהה סוג מכל לא תקין').optional(),
+  is_active: z.boolean().optional(),
+  currency: z.string().length(3, 'מטבע לא תקין').optional(),
+});
+
 // ID parameter validation
 export const idParamSchema = z.object({
   id: z.string().uuid('מזהה לא תקין'),
@@ -138,6 +165,9 @@ export type CreateTankInput = z.infer<typeof createTankSchema>;
 export type UpdateTankInput = z.infer<typeof updateTankSchema>;
 export type CreateReportInput = z.infer<typeof createReportSchema>;
 export type UpdateReportInput = z.infer<typeof updateReportSchema>;
+export type CreatePricingInput = z.infer<typeof createPricingSchema>;
+export type UpdatePricingInput = z.infer<typeof updatePricingSchema>;
+export type PricingFiltersInput = z.infer<typeof pricingFiltersSchema>;
 export type PaginationInput = z.infer<typeof paginationSchema>;
 export type QueryParamsInput = z.infer<typeof queryParamsSchema>;
 export type ReportFiltersInput = z.infer<typeof reportFiltersSchema>;

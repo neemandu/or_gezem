@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { apiHandler, CrudService } from '@/lib/api';
 import { createReportSchema, reportFiltersSchema } from '@/lib/validations';
 import { Report } from '@/types/api';
+import { calculateTotalPrice } from '@/lib/pricing-utils';
 
 const reportsService = new CrudService<Report>('reports');
 
@@ -50,7 +51,28 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const body = await request.json();
   const validatedData = createReportSchema.parse(body);
 
-  // Create report
+  // Automatically calculate pricing if not provided
+  if (!validatedData.unit_price || !validatedData.total_price) {
+    const pricingResult = await calculateTotalPrice(
+      validatedData.settlement_id,
+      validatedData.container_type_id,
+      validatedData.volume
+    );
+
+    if (!pricingResult.success) {
+      return {
+        success: false,
+        error: `שגיאה בחישוב מחיר: ${pricingResult.error}`,
+      };
+    }
+
+    // Update validated data with calculated pricing
+    validatedData.unit_price = pricingResult.data!.unit_price;
+    validatedData.total_price = pricingResult.data!.total_price;
+    validatedData.currency = pricingResult.data!.currency;
+  }
+
+  // Create report with pricing
   const response = await reportsService.create(validatedData);
 
   return response;
