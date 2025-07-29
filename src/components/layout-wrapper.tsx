@@ -143,7 +143,10 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   // Show unauthorized page
   if (pathname === '/unauthorized') {
     return (
-      <div className="min-h-screen bg-background font-hebrew" dir="rtl">
+      <div
+        className="min-h-screen bg-background font-hebrew bg-gradient-to-br from-green-50 via-blue-50 to-emerald-50"
+        dir="rtl"
+      >
         <Header />
         <main className="container mx-auto px-4 py-8 text-right">
           <div className="max-w-md mx-auto text-center space-y-6">
@@ -186,7 +189,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   return (
     <div className="min-h-screen bg-background font-hebrew" dir="rtl">
       <Header />
-      <main className="text-right">
+      <main className="text-right bg-gradient-to-br from-green-100 via-blue-100 to-emerald-100">
         <div className="container mx-auto px-4 py-6">{children}</div>
       </main>
       <Toaster />
