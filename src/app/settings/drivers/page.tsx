@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DriversTable } from '@/components/drivers-table';
 import { DriverFormModal } from '@/components/driver-form-modal';
+import { CredentialsDisplay } from '@/components/credentials-display';
 import { useToast } from '@/hooks/use-toast';
 import { Driver } from '@/types/api';
 import { ConfirmDialog } from '@/components';
@@ -22,6 +23,11 @@ export default function DriversPage({}: DriversPageProps) {
   const [deleting, setDeleting] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [credentialsOpen, setCredentialsOpen] = useState(false);
+  const [newDriverCredentials, setNewDriverCredentials] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
 
   const { toast } = useToast();
 
@@ -132,24 +138,11 @@ export default function DriversPage({}: DriversPageProps) {
 
       // Show success message with login credentials for new drivers
       if (!editingDriver && result.data?.temporary_password) {
-        toast({
-          title: 'נהג נוצר בהצלחה!',
-          description: (
-            <div className="space-y-2">
-              <p>פרטי התחברות:</p>
-              <p>
-                <strong>אימייל:</strong> {formData.email}
-              </p>
-              <p>
-                <strong>סיסמה:</strong> {result.data.temporary_password}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                שמור את הפרטים ושתף עם הנהג
-              </p>
-            </div>
-          ),
-          variant: 'default',
+        setNewDriverCredentials({
+          email: formData.email,
+          password: result.data.temporary_password,
         });
+        setCredentialsOpen(true);
       } else {
         toast({
           title: 'הצלחה',
@@ -228,6 +221,16 @@ export default function DriversPage({}: DriversPageProps) {
         title="מחיקת נהג"
         description={`האם אתה בטוח שברצונך למחוק את הנהג "${deletingDriver?.email}"? פעולה זו תמחק גם את כל הדוחות הקשורים לנהג זה.`}
       />
+
+      {/* Credentials Display */}
+      {newDriverCredentials && (
+        <CredentialsDisplay
+          open={credentialsOpen}
+          onOpenChange={setCredentialsOpen}
+          email={newDriverCredentials.email}
+          password={newDriverCredentials.password}
+        />
+      )}
     </div>
   );
 }

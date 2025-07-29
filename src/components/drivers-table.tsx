@@ -23,8 +23,15 @@ export function DriversTable({
   searchTerm = '',
 }: DriversTableProps) {
   // Filter drivers based on search term
-  const filteredDrivers = drivers.filter((driver) =>
-    driver.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDrivers = drivers.filter(
+    (driver) =>
+      driver.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.user_metadata?.first_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      driver.user_metadata?.last_name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
   useEffect(() => {

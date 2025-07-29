@@ -79,13 +79,7 @@ export function TanksTable({
         </div>
       ),
     },
-    {
-      key: 'unit',
-      header: 'יחידת מידה',
-      render: (value) => (
-        <div className="text-text-secondary">{getTypeDisplayText(value)}</div>
-      ),
-    },
+
     {
       key: 'actions',
       header: 'פעולות',

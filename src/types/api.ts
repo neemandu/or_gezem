@@ -58,7 +58,7 @@ export type UpdateDriverRequest = Partial<CreateDriverRequest>;
 export interface ContainerType extends BaseEntity {
   name: string;
   size: number; // in m³
-  unit: string; // default 'm³'
+  unit: string; // in m³
 }
 
 export type CreateTankRequest = Omit<

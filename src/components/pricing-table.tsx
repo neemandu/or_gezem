@@ -78,7 +78,7 @@ export function PricingTable({
       header: 'מחיר למכל',
       render: (_, pricing) => (
         <div className="font-medium text-text-primary flex items-center gap-2">
-          <DollarSign className="h-4 w-4" />
+          {/* <DollarSign className="h-4 w-4" /> */}
           {formatPrice(pricing.price, pricing.currency)}
         </div>
       ),

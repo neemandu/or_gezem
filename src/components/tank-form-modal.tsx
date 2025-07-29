@@ -26,34 +26,6 @@ interface TankFormModalProps {
   onSubmit: (formData: any) => void;
 }
 
-// Container type options
-const containerTypes: ContainerType[] = [
-  {
-    id: '1',
-    name: 'green_waste',
-    size: 1,
-    unit: 'm³',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'organic',
-    size: 1,
-    unit: 'm³',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'mixed',
-    size: 1,
-    unit: 'm³',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
 export function TankFormModal({
   open,
   onOpenChange,
@@ -63,7 +35,6 @@ export function TankFormModal({
   const [formData, setFormData] = useState({
     name: '',
     size: '',
-    unit: 'green_waste', // This represents the type which determines the unit
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -73,13 +44,11 @@ export function TankFormModal({
       setFormData({
         name: tank.name,
         size: tank.size.toString(),
-        unit: tank.unit,
       });
     } else {
       setFormData({
         name: '',
         size: '',
-        unit: 'green_waste',
       });
     }
     setErrors({});
@@ -101,10 +70,6 @@ export function TankFormModal({
       newErrors.size = 'גודל המכל חייב להיות מספר חיובי';
     }
 
-    if (!formData.unit) {
-      newErrors.unit = 'סוג המכל נדרש';
-    }
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -114,7 +79,7 @@ export function TankFormModal({
     const apiData: CreateTankRequest = {
       name: formData.name,
       size: Number(formData.size),
-      unit: formData.unit,
+      unit: 'm³',
     };
 
     onSubmit(apiData);
@@ -126,10 +91,6 @@ export function TankFormModal({
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
-
-  const selectedType = containerTypes.find(
-    (type) => type.name === formData.unit
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,35 +126,11 @@ export function TankFormModal({
                 className={errors.size ? 'border-destructive' : ''}
               />
               <div className="min-w-0 w-20 flex items-center justify-center bg-muted rounded-md px-3 text-sm text-muted-foreground">
-                {selectedType?.unit || 'ליטר'}
+                m³
               </div>
             </div>
             {errors.size && (
               <p className="text-sm text-destructive">{errors.size}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="unit">יחידת מידה</Label>
-            <Select
-              value={formData.unit}
-              onValueChange={(value) => handleChange('unit', value)}
-            >
-              <SelectTrigger
-                className={errors.unit ? 'border-destructive' : ''}
-              >
-                <SelectValue placeholder="בחר יחידת מידה" />
-              </SelectTrigger>
-              <SelectContent>
-                {containerTypes.map((type) => (
-                  <SelectItem key={type.name} value={type.name}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.unit && (
-              <p className="text-sm text-destructive">{errors.unit}</p>
             )}
           </div>
 

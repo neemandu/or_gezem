@@ -1,7 +1,13 @@
 import { NextRequest } from 'next/server';
-import { apiHandler, CrudService } from '@/lib/api';
+import {
+  apiHandler,
+  CrudService,
+  ApiError,
+  paginatedResponse,
+} from '@/lib/api';
 import { createPricingSchema, pricingFiltersSchema } from '@/lib/validations';
 import { SettlementTankPricing } from '@/types/database';
+import { createClient } from '@/lib/supabase/server';
 
 const pricingService = new CrudService<SettlementTankPricing>(
   'settlement_tank_pricing'
@@ -15,21 +21,36 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const { page, limit, settlement_id, container_type_id, is_active, currency } =
     pricingFiltersSchema.parse(Object.fromEntries(searchParams.entries()));
 
-  // Build filters
-  const filters: Record<string, any> = {};
+  const supabase = await createClient();
 
-  if (settlement_id) filters.settlement_id = settlement_id;
-  if (container_type_id) filters.container_type_id = container_type_id;
-  if (is_active !== undefined) filters.is_active = is_active;
-  if (currency) filters.currency = currency;
+  // Build the query with joins
+  let query = supabase.from('settlement_tank_pricing').select(
+    `
+      *,
+      settlement:settlement_id(id, name),
+      container_type:container_type_id(id, name, size, unit)
+    `,
+    { count: 'exact' }
+  );
 
-  // Get paginated results
-  const response = await pricingService.getAll(filters, {
-    page,
-    limit,
-  });
+  // Apply filters
+  if (settlement_id) query = query.eq('settlement_id', settlement_id);
+  if (container_type_id)
+    query = query.eq('container_type_id', container_type_id);
+  if (is_active !== undefined) query = query.eq('is_active', is_active);
+  if (currency) query = query.eq('currency', currency);
 
-  return response;
+  // Apply pagination
+  const offset = (page - 1) * limit;
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw new ApiError(`Failed to fetch pricing: ${error.message}`);
+  }
+
+  return paginatedResponse(data as any[], page, limit, count || 0);
 });
 
 // POST /api/pricing - Create new pricing
