@@ -31,7 +31,7 @@ CREATE INDEX idx_settlements_created_at ON settlements (created_at);
 -- ====================================
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE,
     role user_role NOT NULL DEFAULT 'SETTLEMENT_USER',
     settlement_id UUID REFERENCES settlements(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
@@ -229,7 +229,7 @@ CREATE TRIGGER prevent_users_role_modification
 -- ====================================
 
 -- Ensure email format is valid
-ALTER TABLE users ADD CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+ALTER TABLE users ADD CONSTRAINT chk_email_format CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
 
 -- Ensure phone numbers are properly formatted (Israeli format)
 ALTER TABLE settlements ADD CONSTRAINT chk_phone_format CHECK (

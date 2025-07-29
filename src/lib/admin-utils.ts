@@ -18,131 +18,161 @@ function createAdminClient() {
 }
 
 export interface CreateUserData {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   role: 'ADMIN' | 'SETTLEMENT_USER' | 'DRIVER';
-  name?: string;
   settlement_id?: string | null;
-  // Additional metadata for drivers
-  phone?: string;
-  license_number?: string;
   first_name?: string;
   last_name?: string;
-  hire_date?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  notes?: string;
+  user_metadata?: Record<string, any>;
 }
 
 export interface CreateUserResult {
   success: boolean;
-  data?: {
-    user_id: string;
-    email: string;
-    role: string;
+  user?: {
+    id: string;
+    email?: string;
+    phone?: string;
+    role: 'ADMIN' | 'SETTLEMENT_USER' | 'DRIVER';
   };
   error?: string;
 }
 
 /**
- * Create a new user with Supabase Auth and profile entry
- * Follows the same pattern as create-auth-users.js script
+ * Creates a new auth user in Supabase Auth and syncs to local users table
+ * Supports both email and phone-based authentication
  */
 export async function createAuthUser(
   userData: CreateUserData
 ): Promise<CreateUserResult> {
-  try {
-    const supabaseAdmin = createAdminClient();
+  const supabase = createAdminClient();
 
-    // Prepare user metadata
-    const userMetadata: Record<string, any> = {
-      role: userData.role,
+  try {
+    // Validate that either email or phone is provided
+    if (!userData.email && !userData.phone) {
+      return {
+        success: false,
+        error: 'Either email or phone number is required',
+      };
+    }
+
+    // For drivers, phone is preferred; for others, email is required
+    if (userData.role === 'DRIVER' && !userData.phone) {
+      return {
+        success: false,
+        error: 'Phone number is required for drivers',
+      };
+    }
+
+    if (
+      (userData.role === 'ADMIN' || userData.role === 'SETTLEMENT_USER') &&
+      !userData.email
+    ) {
+      return {
+        success: false,
+        error: 'Email is required for admin and settlement users',
+      };
+    }
+
+    console.log('Creating auth user with data:', {
+      ...userData,
+      password: '[REDACTED]',
+    });
+
+    // Create user in Supabase Auth
+    const authData: any = {
+      password: userData.password,
+      options: {
+        data: {
+          role: userData.role,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          ...userData.user_metadata,
+        },
+      },
     };
 
-    // Add name if provided
-    if (userData.name) {
-      userMetadata.name = userData.name;
+    // Add email or phone to auth data
+    if (userData.phone) {
+      authData.phone = userData.phone;
+    } else if (userData.email) {
+      authData.email = userData.email;
     }
 
-    // For drivers, add additional metadata
-    if (userData.role === 'DRIVER') {
-      if (userData.phone) userMetadata.phone = userData.phone;
-      if (userData.license_number)
-        userMetadata.license_number = userData.license_number;
-      if (userData.first_name) userMetadata.first_name = userData.first_name;
-      if (userData.last_name) userMetadata.last_name = userData.last_name;
-      if (userData.hire_date) userMetadata.hire_date = userData.hire_date;
-      if (userData.emergency_contact_name)
-        userMetadata.emergency_contact_name = userData.emergency_contact_name;
-      if (userData.emergency_contact_phone)
-        userMetadata.emergency_contact_phone = userData.emergency_contact_phone;
-      if (userData.notes) userMetadata.notes = userData.notes;
-    }
-
-    // Create auth user
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true, // Skip email confirmation
-        user_metadata: userMetadata,
-      });
+    const { data: authUser, error: authError } =
+      await supabase.auth.admin.createUser(authData);
 
     if (authError) {
-      if (authError.message.includes('already registered')) {
-        return {
-          success: false,
-          error: `משתמש עם האימייל ${userData.email} כבר קיים במערכת`,
-        };
-      }
+      console.error('Supabase auth error:', authError);
       return {
         success: false,
-        error: `שגיאה ביצירת המשתמש: ${authError.message}`,
+        error: `Authentication error: ${authError.message}`,
       };
     }
 
-    if (!authData.user) {
+    if (!authUser.user) {
       return {
         success: false,
-        error: 'שגיאה לא צפויה ביצירת המשתמש',
+        error: 'Failed to create user - no user returned from auth',
       };
     }
 
-    // Create or update profile entry in users table
-    const { data: profileData, error: profileError } = await supabaseAdmin
+    console.log('Auth user created successfully:', authUser.user.id);
+
+    // Create user profile in local users table
+    const localUserData: any = {
+      id: authUser.user.id,
+      role: userData.role,
+      settlement_id: userData.settlement_id,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+    };
+
+    // Add email or phone to local user data
+    if (userData.phone) {
+      localUserData.phone = userData.phone;
+    }
+    if (userData.email) {
+      localUserData.email = userData.email;
+    }
+
+    const { error: dbError } = await supabase
       .from('users')
-      .upsert({
-        id: authData.user.id,
-        email: userData.email,
-        role: userData.role,
-        settlement_id: userData.settlement_id || null,
-      })
-      .select()
-      .single();
+      .insert([localUserData]);
 
-    if (profileError) {
-      // Clean up auth user if profile creation fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+
+      // Try to clean up the auth user if local user creation fails
+      try {
+        await supabase.auth.admin.deleteUser(authUser.user.id);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup auth user:', cleanupError);
+      }
+
       return {
         success: false,
-        error: `שגיאה ביצירת פרופיל המשתמש: ${profileError.message}`,
+        error: `Database error: ${dbError.message}`,
       };
     }
+
+    console.log('Local user profile created successfully');
 
     return {
       success: true,
-      data: {
-        user_id: authData.user.id,
+      user: {
+        id: authUser.user.id,
         email: userData.email,
+        phone: userData.phone,
         role: userData.role,
       },
     };
   } catch (error) {
-    console.error('Error creating auth user:', error);
+    console.error('Unexpected error in createAuthUser:', error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : 'שגיאה לא צפויה ביצירת המשתמש',
+      error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
 }

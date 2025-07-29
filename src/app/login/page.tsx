@@ -9,11 +9,13 @@ import { useAuth } from '@/contexts/auth-context';
 import { getDefaultRedirectUrl } from '@/lib/auth-utils';
 
 export default function LoginPage() {
+  const [loginMode, setLoginMode] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user, userRole } = useAuth();
+  const { signIn, signInWithPhone, user, userRole } = useAuth();
   const router = useRouter();
 
   // Redirect if already authenticated
@@ -29,7 +31,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    const result = await signIn(email, password);
+    let result;
+    if (loginMode === 'email') {
+      result = await signIn(email, password);
+    } else {
+      result = await signInWithPhone(phone, password);
+    }
 
     if (result.error) {
       setError(result.error);
@@ -94,6 +101,34 @@ export default function LoginPage() {
           </div>
 
           <div className="px-8 py-8">
+            {/* Login Mode Toggle */}
+            <div className="mb-6">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('email')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                    loginMode === 'email'
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  כתובת מייל
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode('phone')}
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                    loginMode === 'phone'
+                      ? 'bg-white text-green-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  מספר טלפון
+                </button>
+              </div>
+            </div>
+
             {error && (
               <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg shadow-sm">
                 <div className="flex">
@@ -118,37 +153,74 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="email"
-                  className="text-sm font-semibold text-gray-700 flex items-center"
-                >
-                  <svg
-                    className="w-4 h-4 ml-2 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {loginMode === 'email' ? (
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-semibold text-gray-700 flex items-center"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-                    />
-                  </svg>
-                  כתובת מייל
-                </Label>
-                <Input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="הזן כתובת מייל"
-                  className="w-full text-right border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg py-3 px-4 transition-all duration-200 bg-gray-50 focus:bg-white"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
+                    <svg
+                      className="w-4 h-4 ml-2 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                      />
+                    </svg>
+                    כתובת מייל
+                  </Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="הזן כתובת מייל"
+                    className="w-full text-right border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg py-3 px-4 transition-all duration-200 bg-gray-50 focus:bg-white"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="phone"
+                    className="text-sm font-semibold text-gray-700 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 ml-2 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                      />
+                    </svg>
+                    מספר טלפון
+                  </Label>
+                  <Input
+                    type="tel"
+                    id="phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="052-1234567"
+                    className="w-full text-right border-gray-200 focus:border-green-500 focus:ring-green-500 rounded-lg py-3 px-4 transition-all duration-200 bg-gray-50 focus:bg-white"
+                    disabled={isLoading}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 text-right">
+                    הזן מספר טלפון ישראלי (לדוגמה: 052-1234567)
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label

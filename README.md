@@ -358,3 +358,114 @@ For technical support or questions, please contact the development team.
 **Document Version**: 2.2  
 **Last Updated**: 2025.01.16  
 **Project Status**: In Development
+
+## Phone Number Authentication for Drivers
+
+This system supports phone number authentication for drivers, allowing them to log in using their Israeli phone numbers instead of email addresses.
+
+### Setup Instructions
+
+#### 1. Configure Supabase Phone Authentication
+
+1. **Go to your Supabase Dashboard** → Authentication → Providers
+2. **Enable Phone Provider**:
+   - Toggle "Enable phone provider" to ON
+   - Configure phone settings as needed
+
+#### 2. Choose and Configure SMS Provider
+
+You need to set up an SMS provider to send OTP codes. Supabase supports:
+
+- **Twilio** (Recommended)
+- **MessageBird**
+- **Vonage**
+- **TextLocal** (Community supported)
+
+##### For Twilio Setup:
+
+1. Create a Twilio account at [twilio.com](https://twilio.com)
+2. Get your Account SID and Auth Token
+3. Purchase a phone number in Twilio
+4. In Supabase Dashboard → Authentication → Providers → Phone:
+   - **Provider**: Select "Twilio"
+   - **Account SID**: Your Twilio Account SID
+   - **Auth Token**: Your Twilio Auth Token
+   - **Phone Number**: Your Twilio phone number (format: +1234567890)
+
+#### 3. Database Migration
+
+Run the following migration to support phone authentication:
+
+```sql
+-- Make email optional for drivers
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+
+-- Add unique constraint to phone
+ALTER TABLE users ADD CONSTRAINT users_phone_unique UNIQUE (phone);
+
+-- Ensure users have either email or phone
+ALTER TABLE users ADD CONSTRAINT chk_users_email_or_phone
+CHECK ((email IS NOT NULL) OR (phone IS NOT NULL));
+```
+
+#### 4. Environment Variables
+
+No additional environment variables are needed. Supabase handles phone authentication through your dashboard configuration.
+
+### Driver Authentication Options
+
+The system now supports two authentication methods:
+
+#### Option 1: Phone + Password (Current Implementation)
+
+- Drivers log in with their phone number and password
+- Similar to email authentication but uses phone numbers
+- Recommended for simplicity
+
+#### Option 2: Phone OTP (Passwordless)
+
+To enable OTP-only authentication, modify the `signInWithPhone` method in `auth-context.tsx`:
+
+```typescript
+const signInWithPhoneOTP = async (phone: string) => {
+  const { error } = await supabase.auth.signInWithOtp({
+    phone,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {};
+};
+```
+
+### Usage
+
+1. **Creating Drivers**: Use the admin interface at `/settings/drivers` to add new drivers with phone numbers
+2. **Driver Login**: Drivers can now log in at `/login` using either:
+   - Email + Password (existing users)
+   - Phone + Password (new drivers)
+
+### Phone Number Format
+
+The system validates Israeli phone numbers in the format:
+
+- `+972-XX-XXXXXXX`
+- `0XX-XXXXXXX`
+- Examples: `052-1234567`, `+972-52-1234567`
+
+### Benefits
+
+- **Better User Experience**: Drivers don't need to remember email addresses
+- **Localized**: Works well with Israeli phone number format
+- **Security**: Phone numbers are often more secure than email for drivers
+- **SMS Integration**: Can send notifications via SMS using the same phone numbers
+
+### Migration from Email to Phone
+
+Existing drivers with email authentication will continue to work. New drivers can be created with phone numbers only. To migrate existing drivers:
+
+1. Add phone numbers to existing driver records
+2. Update their authentication method in Supabase Auth
+3. Inform drivers of the new login method

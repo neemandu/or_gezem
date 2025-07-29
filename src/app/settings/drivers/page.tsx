@@ -138,7 +138,7 @@ export default function DriversPage({}: DriversPageProps) {
             <div className="space-y-2">
               <p>פרטי התחברות:</p>
               <p>
-                <strong>אימייל:</strong> {formData.email}
+                <strong>טלפון:</strong> {formData.phone}
               </p>
               <p>
                 <strong>סיסמה:</strong> {result.data.temporary_password}
@@ -224,9 +224,13 @@ export default function DriversPage({}: DriversPageProps) {
         onConfirm={handleConfirmDelete}
         loading={deleting}
         variant="destructive"
-        itemName={deletingDriver?.email}
+        itemName={
+          deletingDriver?.user_metadata?.phone ||
+          deletingDriver?.email ||
+          'הנהג'
+        }
         title="מחיקת נהג"
-        description={`האם אתה בטוח שברצונך למחוק את הנהג "${deletingDriver?.email}"? פעולה זו תמחק גם את כל הדוחות הקשורים לנהג זה.`}
+        description={`האם אתה בטוח שברצונך למחוק את הנהג? פעולה זו תמחק גם את כל הדוחות הקשורים לנהג זה.`}
       />
     </div>
   );

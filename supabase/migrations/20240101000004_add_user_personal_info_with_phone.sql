@@ -6,7 +6,7 @@
 -- ====================================
 
 -- Add phone column with Israeli phone number validation (consistent with settlements table)
-ALTER TABLE users ADD COLUMN phone VARCHAR(20);
+ALTER TABLE users ADD COLUMN phone VARCHAR(20) UNIQUE;
 
 -- Add first_name column
 ALTER TABLE users ADD COLUMN first_name VARCHAR(255);
@@ -17,6 +17,11 @@ ALTER TABLE users ADD COLUMN last_name VARCHAR(255);
 -- ====================================
 -- ADD CONSTRAINTS FOR DATA VALIDATION
 -- ====================================
+
+-- Ensure users have either email or phone (at least one identifier)
+ALTER TABLE users ADD CONSTRAINT chk_users_email_or_phone CHECK (
+    (email IS NOT NULL) OR (phone IS NOT NULL)
+);
 
 -- Ensure phone numbers are properly formatted (Israeli format, same as settlements table)
 ALTER TABLE users ADD CONSTRAINT chk_users_phone_format CHECK (
