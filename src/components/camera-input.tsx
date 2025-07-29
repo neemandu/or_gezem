@@ -37,6 +37,7 @@ export function CameraInput({
   });
   const [isCameraMode, setIsCameraMode] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [capturedImage, setCapturedImage] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -109,6 +110,11 @@ export function CameraInput({
   // Start camera
   const startCamera = useCallback(async () => {
     try {
+      // Check if camera is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('מצלמה לא נתמכת בדפדפן זה');
+      }
+
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment', // Use back camera on mobile
@@ -122,10 +128,28 @@ export function CameraInput({
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch(console.error);
+          }
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      onError?.('לא ניתן לגשת למצלמה. אנא ודא שנתת הרשאה למצלמה.');
+      let errorMessage = 'לא ניתן לגשת למצלמה. אנא ודא שנתת הרשאה למצלמה.';
+
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'הרשאת מצלמה נדחתה. אנא אפשר גישה למצלמה.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'לא נמצאה מצלמה במכשיר.';
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'מצלמה לא נתמכת בדפדפן זה.';
+        }
+      }
+
+      onError?.(errorMessage);
     }
   }, [onError]);
 
@@ -146,10 +170,12 @@ export function CameraInput({
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
 
+    if (!ctx) return;
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    ctx?.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0);
 
     canvas.toBlob(
       async (blob) => {
@@ -158,16 +184,24 @@ export function CameraInput({
             type: 'image/jpeg',
           });
 
-          await handleFileUpload(file);
+          // Compress the captured image
+          const compressedFile = await compressImage(file);
+          setCapturedImage(compressedFile);
+
+          // Create preview
+          const previewUrl = URL.createObjectURL(compressedFile);
+          setPreview(previewUrl);
+
+          // Stop camera after capture
           stopCamera();
         }
       },
       'image/jpeg',
       quality
     );
-  }, [quality, stopCamera]);
+  }, [quality, stopCamera, compressImage]);
 
-  // Handle file selection
+  // Handle file selection from gallery
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -185,9 +219,14 @@ export function CameraInput({
         return;
       }
 
-      await handleFileUpload(file);
+      // Compress and set preview
+      const compressedFile = await compressImage(file);
+      setCapturedImage(compressedFile);
+
+      const previewUrl = URL.createObjectURL(compressedFile);
+      setPreview(previewUrl);
     },
-    [maxSizeMB, onError]
+    [maxSizeMB, onError, compressImage]
   );
 
   // Upload file to Supabase
@@ -201,13 +240,6 @@ export function CameraInput({
 
         setUploadProgress({ progress: 0, status: 'uploading' });
 
-        // Compress image
-        const compressedFile = await compressImage(file);
-
-        // Create preview
-        const previewUrl = URL.createObjectURL(compressedFile);
-        setPreview(previewUrl);
-
         // Simulate upload progress
         setUploadProgress({ progress: 30, status: 'uploading' });
 
@@ -217,7 +249,7 @@ export function CameraInput({
         // Upload to Supabase storage with authenticated client
         const result = await storage.uploadImage(
           'reports',
-          compressedFile,
+          file,
           'images',
           supabase
         );
@@ -248,8 +280,15 @@ export function CameraInput({
         );
       }
     },
-    [compressImage, onImageUploaded, onError, user, maxSizeMB]
+    [onImageUploaded, onError, user, maxSizeMB]
   );
+
+  // Upload the captured/selected image
+  const uploadCurrentImage = useCallback(async () => {
+    if (capturedImage) {
+      await handleFileUpload(capturedImage);
+    }
+  }, [capturedImage, handleFileUpload]);
 
   // Remove image
   const removeImage = useCallback(() => {
@@ -257,6 +296,7 @@ export function CameraInput({
       URL.revokeObjectURL(preview);
     }
     setPreview(null);
+    setCapturedImage(null);
     setUploadProgress({ progress: 0, status: 'idle' });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -372,26 +412,38 @@ export function CameraInput({
         </div>
       )}
 
-      {/* Retake button */}
-      {preview && !isCameraMode && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={removeImage}
-          className="w-full"
-          size="lg"
-        >
-          <RotateCcw className="w-4 h-4 ml-2" />
-          צלם שוב
-        </Button>
+      {/* Upload button for captured/selected image */}
+      {preview && !isCameraMode && capturedImage && (
+        <div className="space-y-2">
+          <Button
+            type="button"
+            onClick={uploadCurrentImage}
+            disabled={uploadProgress.status === 'uploading'}
+            className="w-full"
+            size="lg"
+          >
+            <Upload className="w-4 h-4 ml-2" />
+            העלה תמונה
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={removeImage}
+            className="w-full"
+            size="lg"
+          >
+            <RotateCcw className="w-4 h-4 ml-2" />
+            צלם שוב
+          </Button>
+        </div>
       )}
 
-      {/* Hidden file input */}
+      {/* Hidden file input - removed capture attribute to open gallery */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
         disabled={disabled}
