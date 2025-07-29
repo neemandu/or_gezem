@@ -103,7 +103,7 @@ export default function Home() {
                     </p>
                   </div>
                   <Button
-                    onClick={() => handleNavigate('/admin')}
+                    onClick={() => handleNavigate('/settings')}
                     className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     כניסה לניהול

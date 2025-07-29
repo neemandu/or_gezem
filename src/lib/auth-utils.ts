@@ -6,7 +6,7 @@ import type { UserRole } from '@/lib/supabase/types';
 export function getDefaultRedirectUrl(role: UserRole): string {
   switch (role) {
     case 'ADMIN':
-      return '/admin';
+      return '/settings';
     case 'SETTLEMENT_USER':
       return '/dashboard';
     case 'DRIVER':

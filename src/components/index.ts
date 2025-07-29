@@ -32,6 +32,7 @@ export * from './ui/hebrew-toast';
 export * from './ui/loading';
 export * from './ui/confirm-dialog';
 export * from './ui/error-boundary';
+export * from './ui/pagination';
 
 // Settlements Management Components
 export { SettlementsTable } from './settlements-table';

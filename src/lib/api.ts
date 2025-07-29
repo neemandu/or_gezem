@@ -170,7 +170,12 @@ export class CrudService<T = any> {
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          query = query.eq(key, value);
+          // Handle search filters with ILIKE for text search
+          if (key === 'name' && typeof value === 'string') {
+            query = query.ilike(key, `%${value}%`);
+          } else {
+            query = query.eq(key, value);
+          }
         }
       });
     }

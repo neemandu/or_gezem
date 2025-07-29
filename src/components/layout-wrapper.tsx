@@ -45,10 +45,6 @@ const routeConfigs: RouteConfig[] = [
     path: '/settings',
     allowedRoles: ['ADMIN'],
   },
-  {
-    path: '/admin',
-    allowedRoles: ['ADMIN'],
-  },
 ];
 
 export function LayoutWrapper({ children }: LayoutWrapperProps) {

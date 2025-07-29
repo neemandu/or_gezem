@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/unauthorized');
   const isProtectedRoute =
-    request.nextUrl.pathname.startsWith('/admin') ||
+    request.nextUrl.pathname.startsWith('/settings') ||
     request.nextUrl.pathname.startsWith('/dashboard') ||
     request.nextUrl.pathname.startsWith('/report');
 
@@ -60,7 +60,7 @@ export async function updateSession(request: NextRequest) {
     const userRole = user.user_metadata?.role;
     switch (userRole) {
       case 'ADMIN':
-        url.pathname = '/admin';
+        url.pathname = '/settings';
         break;
       case 'SETTLEMENT_USER':
         url.pathname = '/dashboard';

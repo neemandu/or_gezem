@@ -186,7 +186,7 @@ npm run dev
 - Advanced filtering and export functionality
 - **Access**: ADMIN (all settlements), SETTLEMENT_USER (filtered)
 
-### `/admin`
+### `/settings`
 
 - System administration and settings management
 - User management, pricing configuration

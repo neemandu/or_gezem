@@ -19,9 +19,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   // Add search functionality
   if (search) {
-    // Note: This is a simple implementation. For proper full-text search,
-    // you might want to use Supabase's text search functions
-    filters.name = search; // This would need to be enhanced for proper search
+    // For now, we'll use a simple ILIKE search on the name field
+    // In a production environment, you might want to use Supabase's full-text search
+    filters.name = search;
   }
 
   // Get paginated results

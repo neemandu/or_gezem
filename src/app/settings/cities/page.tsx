@@ -9,6 +9,7 @@ import {
   ConfirmDialog,
 } from '@/components';
 import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Settlement,
   CreateSettlementRequest,
@@ -19,6 +20,16 @@ export default function SettlementsCitiesPage() {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<
+    | {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      }
+    | undefined
+  >(undefined);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingSettlement, setEditingSettlement] = useState<Settlement | null>(
     null
@@ -30,16 +41,28 @@ export default function SettlementsCitiesPage() {
   const [deleting, setDeleting] = useState(false);
 
   const { toast } = useToast();
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  // Fetch settlements on component mount
+  // Fetch settlements on component mount and when page/search changes
   useEffect(() => {
     fetchSettlements();
-  }, []);
+  }, [currentPage, debouncedSearchTerm]);
 
   const fetchSettlements = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/settlements');
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10',
+      });
+
+      if (debouncedSearchTerm) {
+        params.append('search', debouncedSearchTerm);
+      }
+
+      const response = await fetch(`/api/settlements?${params.toString()}`);
 
       if (!response.ok) {
         throw new Error('שגיאה בטעינת היישובים');
@@ -49,6 +72,7 @@ export default function SettlementsCitiesPage() {
 
       if (result.success) {
         setSettlements(result.data || []);
+        setPagination(result.pagination || undefined);
       } else {
         throw new Error(result.error || 'שגיאה בטעינת היישובים');
       }
@@ -68,6 +92,15 @@ export default function SettlementsCitiesPage() {
   const handleAdd = () => {
     setEditingSettlement(null);
     setFormModalOpen(true);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handleEdit = (settlement: Settlement) => {
@@ -224,10 +257,13 @@ export default function SettlementsCitiesPage() {
         settlements={settlements}
         loading={loading}
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={handleSearchChange}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        itemsPerPage={10}
+        pagination={pagination}
+        onPageChange={handlePageChange}
       />
 
       {/* Add/Edit Form Modal */}
