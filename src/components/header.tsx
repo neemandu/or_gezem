@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import Image from 'next/image';
 
 interface NavItem {
   href: string;
@@ -95,7 +96,7 @@ export function Header() {
           href="/"
           className="flex items-center space-x-2 space-x-reverse font-bold text-xl text-primary"
         >
-          <span>א.ו.ר גזם בע&quot;מ</span>
+          <Image src="/logo.jpg" alt="logo" width={100} height={100} />
         </Link>
 
         {/* Desktop Navigation */}

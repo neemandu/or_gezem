@@ -5,11 +5,12 @@ import { LogOut, Users, Building, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { getRoleDisplayName } from '@/lib/auth-utils';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const { user, userRole, signOut, isLoading } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
-
+  const router = useRouter();
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
@@ -94,7 +95,11 @@ export default function AdminPage() {
             <p className="text-gray-600 text-sm mb-4">
               נהל משתמשים, הרשאות ותפקידים במערכת
             </p>
-            <Button className="w-full" variant="outline">
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => router.push('/settings/drivers')}
+            >
               ניהול משתמשים
             </Button>
           </div>
@@ -109,7 +114,11 @@ export default function AdminPage() {
             <p className="text-gray-600 text-sm mb-4">
               נהל יישובים, הגדרות איסוף ודוחות
             </p>
-            <Button className="w-full" variant="outline">
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => router.push('/settings/cities')}
+            >
               ניהול יישובים
             </Button>
           </div>
@@ -124,7 +133,11 @@ export default function AdminPage() {
             <p className="text-gray-600 text-sm mb-4">
               נהל הגדרות כלליות ותצורת המערכת
             </p>
-            <Button className="w-full" variant="outline">
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={() => router.push('/settings')}
+            >
               הגדרות מערכת
             </Button>
           </div>
