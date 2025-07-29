@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HebrewSelect } from '@/components/ui/hebrew-select';
-import { CameraInput } from '@/components/camera-input';
+import { CameraInput, CameraInputRef } from '@/components/camera-input';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -62,6 +62,9 @@ export default function ReportPage() {
     },
   });
 
+  // Ref for CameraInput component
+  const cameraInputRef = useRef<CameraInputRef>(null);
+
   // Load settlements and container types
   useEffect(() => {
     const loadFormData = async () => {
@@ -69,7 +72,7 @@ export default function ReportPage() {
         setIsLoadingData(true);
 
         // Fetch settlements
-        const settlementsResponse = await fetch('/api/settlements');
+        const settlementsResponse = await fetch('/api/settlements?limit=100');
         if (!settlementsResponse.ok) {
           throw new Error('Failed to load settlements');
         }
@@ -79,7 +82,7 @@ export default function ReportPage() {
         }
 
         // Fetch container types
-        const containerTypesResponse = await fetch('/api/tanks');
+        const containerTypesResponse = await fetch('/api/tanks?limit=100');
         if (!containerTypesResponse.ok) {
           throw new Error('Failed to load container types');
         }
@@ -126,6 +129,21 @@ export default function ReportPage() {
     try {
       setIsSubmitting(true);
 
+      // Check if there's a pending image and upload it automatically
+      if (cameraInputRef.current?.hasPendingImage()) {
+        toast({
+          title: 'מעלה תמונה...',
+          description: 'מעלה תמונה לפני שליחת הדיווח',
+        });
+
+        const uploadSuccess = await cameraInputRef.current.uploadPendingImage();
+
+        if (!uploadSuccess) {
+          // Upload failed, error was already shown by CameraInput component
+          return;
+        }
+      }
+
       // Add driver_id from current user
       const reportData = {
         ...data,
@@ -153,8 +171,9 @@ export default function ReportPage() {
           description: 'הדיווח נשלח בהצלחה',
         });
 
-        // Reset form
+        // Reset form and clear image
         form.reset();
+        cameraInputRef.current?.clearImage();
       } else {
         throw new Error(result.error || 'שגיאה בשליחת הדיווח');
       }
@@ -288,6 +307,7 @@ export default function ReportPage() {
             <div className="space-y-2">
               <Label>תמונה</Label>
               <CameraInput
+                ref={cameraInputRef}
                 onImageUploaded={handleImageUploaded}
                 onError={handleImageError}
                 maxSizeMB={5}
