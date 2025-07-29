@@ -35,13 +35,10 @@ export function CameraInput({
     progress: 0,
     status: 'idle',
   });
-  const [isCameraMode, setIsCameraMode] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Get authentication context
   const { user } = useAuth();
@@ -107,101 +104,7 @@ export function CameraInput({
     [quality]
   );
 
-  // Start camera
-  const startCamera = useCallback(async () => {
-    try {
-      // Check if camera is supported
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('מצלמה לא נתמכת בדפדפן זה');
-      }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment', // Use back camera on mobile
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        },
-      });
-
-      setStream(mediaStream);
-      setIsCameraMode(true);
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        // Wait for video to be ready
-        videoRef.current.onloadedmetadata = () => {
-          if (videoRef.current) {
-            videoRef.current.play().catch(console.error);
-          }
-        };
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      let errorMessage = 'לא ניתן לגשת למצלמה. אנא ודא שנתת הרשאה למצלמה.';
-
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMessage = 'הרשאת מצלמה נדחתה. אנא אפשר גישה למצלמה.';
-        } else if (error.name === 'NotFoundError') {
-          errorMessage = 'לא נמצאה מצלמה במכשיר.';
-        } else if (error.name === 'NotSupportedError') {
-          errorMessage = 'מצלמה לא נתמכת בדפדפן זה.';
-        }
-      }
-
-      onError?.(errorMessage);
-    }
-  }, [onError]);
-
-  // Stop camera
-  const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
-    }
-    setIsCameraMode(false);
-  }, [stream]);
-
-  // Capture photo from camera
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    ctx.drawImage(video, 0, 0);
-
-    canvas.toBlob(
-      async (blob) => {
-        if (blob) {
-          const file = new File([blob], `photo-${Date.now()}.jpg`, {
-            type: 'image/jpeg',
-          });
-
-          // Compress the captured image
-          const compressedFile = await compressImage(file);
-          setCapturedImage(compressedFile);
-
-          // Create preview
-          const previewUrl = URL.createObjectURL(compressedFile);
-          setPreview(previewUrl);
-
-          // Stop camera after capture
-          stopCamera();
-        }
-      },
-      'image/jpeg',
-      quality
-    );
-  }, [quality, stopCamera, compressImage]);
-
-  // Handle file selection from gallery
+  // Handle file selection from camera or gallery
   const handleFileSelect = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -301,6 +204,9 @@ export function CameraInput({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
   }, [preview]);
 
   // Cleanup on unmount
@@ -309,46 +215,13 @@ export function CameraInput({
       if (preview) {
         URL.revokeObjectURL(preview);
       }
-      stopCamera();
     };
-  }, [preview, stopCamera]);
+  }, [preview]);
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Camera video */}
-      {isCameraMode && (
-        <div className="relative bg-black rounded-lg overflow-hidden">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-64 object-cover"
-          />
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
-            <Button
-              type="button"
-              size="lg"
-              onClick={capturePhoto}
-              className="bg-white text-black hover:bg-gray-100 rounded-full w-16 h-16"
-            >
-              <Camera className="w-6 h-6" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={stopCamera}
-              className="bg-white text-black hover:bg-gray-100 rounded-full w-16 h-16"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Image preview */}
-      {preview && !isCameraMode && (
+      {preview && (
         <div className="relative">
           <img
             src={preview}
@@ -383,12 +256,12 @@ export function CameraInput({
       )}
 
       {/* Action buttons */}
-      {!preview && !isCameraMode && (
+      {!preview && (
         <div className="space-y-2">
           {isMobile && (
             <Button
               type="button"
-              onClick={startCamera}
+              onClick={() => cameraInputRef.current?.click()}
               disabled={disabled}
               className="w-full"
               size="lg"
@@ -413,7 +286,7 @@ export function CameraInput({
       )}
 
       {/* Upload button for captured/selected image */}
-      {preview && !isCameraMode && capturedImage && (
+      {preview && capturedImage && (
         <div className="space-y-2">
           <Button
             type="button"
@@ -439,7 +312,7 @@ export function CameraInput({
         </div>
       )}
 
-      {/* Hidden file input - removed capture attribute to open gallery */}
+      {/* Hidden file input for gallery selection */}
       <input
         ref={fileInputRef}
         type="file"
@@ -449,8 +322,16 @@ export function CameraInput({
         disabled={disabled}
       />
 
-      {/* Hidden canvas for photo capture */}
-      <canvas ref={canvasRef} className="hidden" />
+      {/* Hidden file input for camera capture - this will open native camera app on mobile */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileSelect}
+        className="hidden"
+        disabled={disabled}
+      />
     </div>
   );
 }
