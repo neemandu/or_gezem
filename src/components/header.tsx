@@ -3,7 +3,16 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, LogOut, User, ChevronDown } from 'lucide-react';
+import {
+  Menu,
+  LogOut,
+  User,
+  ChevronDown,
+  Building,
+  Phone,
+  Bell,
+  Settings,
+} from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { getRoleDisplayName } from '@/lib/auth-utils';
 
 interface NavItem {
   href: string;
@@ -32,14 +42,34 @@ interface NavItem {
 
 const navigationItems: NavItem[] = [
   {
-    href: '/data',
+    href: '/dashboard',
+    label: 'דשבורד',
+    roles: ['ADMIN', 'SETTLEMENT_USER'],
+  },
+  {
+    href: '/reports',
     label: 'דיווחים',
     roles: ['ADMIN', 'SETTLEMENT_USER'],
   },
   {
-    href: '/report',
-    label: 'דיווח',
+    href: '/my-reports',
+    label: 'הדיווחים שלי',
     roles: ['DRIVER'],
+  },
+  {
+    href: '/report',
+    label: 'דיווח חדש',
+    roles: ['DRIVER'],
+  },
+  {
+    href: '/pricing',
+    label: 'מחירים',
+    roles: ['ADMIN', 'SETTLEMENT_USER'],
+  },
+  {
+    href: '/analytics',
+    label: 'ניתוח נתונים',
+    roles: ['ADMIN'],
   },
   {
     href: '/settings',
@@ -49,7 +79,7 @@ const navigationItems: NavItem[] = [
 ];
 
 export function Header() {
-  const { user, signOut, hasRole } = useAuth();
+  const { user, userDetails, signOut, hasRole } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -64,21 +94,26 @@ export function Header() {
     router.push('/login');
   };
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'ADMIN':
-        return 'מנהל מערכת';
-      case 'SETTLEMENT_USER':
-        return 'משתמש יישוב';
-      case 'DRIVER':
-        return 'נהג';
-      default:
-        return role;
+  const getUserDisplayName = () => {
+    if (userDetails?.first_name && userDetails?.last_name) {
+      return `${userDetails.first_name} ${userDetails.last_name}`;
     }
+    if (userDetails?.first_name) {
+      return userDetails.first_name;
+    }
+    return userDetails?.email || user?.email || '';
   };
 
-  const getUserInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
+  const getUserInitials = () => {
+    if (userDetails?.first_name && userDetails?.last_name) {
+      return `${userDetails.first_name[0]}${userDetails.last_name[0]}`.toUpperCase();
+    }
+    if (userDetails?.first_name) {
+      return userDetails.first_name[0].toUpperCase();
+    }
+    return (userDetails?.email || user?.email || '')
+      .substring(0, 2)
+      .toUpperCase();
   };
 
   const closeSheet = () => setIsSheetOpen(false);
@@ -115,26 +150,80 @@ export function Header() {
 
         {/* Right side - User menu and mobile menu */}
         <div className="flex items-center space-x-4 space-x-reverse">
+          {/* Notifications */}
+          <Link href="/notifications">
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell className="h-4 w-4" />
+              {/* Notification indicator - you can add logic to show unread count */}
+              <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+            </Button>
+          </Link>
+
           {/* User Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="text-xs">
-                    {getUserInitials(user.email || '')}
+                    {getUserInitials()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuContent className="w-64" align="end" forceMount>
               <div className="flex items-center justify-start space-x-2 space-x-reverse p-2">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="text-sm">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium text-sm">{user.email}</p>
+                  <p className="font-medium text-sm">{getUserDisplayName()}</p>
                   <p className="text-xs text-text-secondary">
-                    {getRoleDisplayName(user.role || '')}
+                    {userDetails?.email}
                   </p>
+                  <p className="text-xs text-primary font-medium">
+                    {userDetails?.role
+                      ? getRoleDisplayName(userDetails.role)
+                      : ''}
+                  </p>
+                  {userDetails?.settlement && (
+                    <div className="flex items-center space-x-1 space-x-reverse mt-1">
+                      <Building className="h-3 w-3 text-text-secondary" />
+                      <p className="text-xs text-text-secondary">
+                        {userDetails.settlement.name}
+                      </p>
+                    </div>
+                  )}
+                  {userDetails?.phone && (
+                    <div className="flex items-center space-x-1 space-x-reverse">
+                      <Phone className="h-3 w-3 text-text-secondary" />
+                      <p className="text-xs text-text-secondary">
+                        {userDetails.phone}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/notifications" className="flex items-center">
+                  <Bell className="mr-2 ml-2 h-4 w-4" />
+                  <span>התראות</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/profile" className="flex items-center">
+                  <User className="mr-2 ml-2 h-4 w-4" />
+                  <span>פרופיל משתמש</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center">
+                  <Settings className="mr-2 ml-2 h-4 w-4" />
+                  <span>הגדרות מערכת</span>
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 ml-2 h-4 w-4" />
@@ -165,16 +254,39 @@ export function Header() {
               <div className="flex flex-col space-y-4 mt-4">
                 {/* User Info in Mobile Menu */}
                 <div className="flex items-center space-x-3 space-x-reverse p-3 rounded-lg bg-primary-gray-100">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback>
-                      {getUserInitials(user.email || '')}
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="text-sm">
+                      {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{user.email}</span>
-                    <span className="text-xs text-text-secondary">
-                      {getRoleDisplayName(user.role || '')}
+                  <div className="flex flex-col flex-1">
+                    <span className="text-sm font-medium">
+                      {getUserDisplayName()}
                     </span>
+                    <span className="text-xs text-text-secondary">
+                      {userDetails?.email}
+                    </span>
+                    <span className="text-xs text-primary font-medium">
+                      {userDetails?.role
+                        ? getRoleDisplayName(userDetails.role)
+                        : ''}
+                    </span>
+                    {userDetails?.settlement && (
+                      <div className="flex items-center space-x-1 space-x-reverse mt-1">
+                        <Building className="h-3 w-3 text-text-secondary" />
+                        <span className="text-xs text-text-secondary">
+                          {userDetails.settlement.name}
+                        </span>
+                      </div>
+                    )}
+                    {userDetails?.phone && (
+                      <div className="flex items-center space-x-1 space-x-reverse">
+                        <Phone className="h-3 w-3 text-text-secondary" />
+                        <span className="text-xs text-text-secondary">
+                          {userDetails.phone}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -196,6 +308,20 @@ export function Header() {
                       <span>{item.label}</span>
                     </Link>
                   ))}
+
+                  {/* Notifications Link */}
+                  <Link
+                    href="/notifications"
+                    onClick={closeSheet}
+                    className={`flex items-center space-x-2 space-x-reverse p-3 rounded-lg transition-colors hover:bg-primary-blue-200 ${
+                      pathname === '/notifications'
+                        ? 'bg-primary-blue-200 text-primary font-medium'
+                        : 'text-text-secondary'
+                    }`}
+                  >
+                    <Bell className="h-4 w-4" />
+                    <span>התראות</span>
+                  </Link>
                 </nav>
 
                 <Separator />

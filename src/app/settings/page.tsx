@@ -2,7 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Building, Users, Package, DollarSign } from 'lucide-react';
+import {
+  Settings,
+  Building,
+  Users,
+  Package,
+  DollarSign,
+  User,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 
@@ -15,6 +22,13 @@ interface TabItem {
 }
 
 const settingsTabs: TabItem[] = [
+  {
+    id: 'profile',
+    label: 'פרופיל משתמש',
+    href: '/settings/profile',
+    icon: User,
+    description: 'עדכון פרטי הפרופיל האישי שלך',
+  },
   {
     id: 'settlements',
     label: 'יישובים',
