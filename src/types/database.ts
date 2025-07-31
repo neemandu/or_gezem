@@ -64,9 +64,6 @@ export interface Report {
   notes: string | null;
   image_url: string | null;
   image_public_id: string | null;
-  unit_price: number;
-  total_price: number;
-  currency: string;
   notification_sent: boolean;
   created_at: string;
   updated_at: string;

@@ -32,7 +32,10 @@ export async function getPriceForSettlementAndContainer(
   try {
     const supabase = await createClient();
 
+    console.log('Looking for pricing:', { settlementId, containerTypeId });
+
     // Get active pricing for settlement and container type
+    // Use order by created_at desc and limit 1 to get the most recent active pricing
     const { data: pricing, error: pricingError } = await supabase
       .from('settlement_tank_pricing')
       .select(
@@ -44,21 +47,49 @@ export async function getPriceForSettlementAndContainer(
       .eq('settlement_id', settlementId)
       .eq('container_type_id', containerTypeId)
       .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
     if (pricingError) {
+      console.error('Pricing query error:', pricingError);
+
+      // Check if it's a "no rows returned" error
+      if (pricingError.code === 'PGRST116') {
+        return {
+          success: false,
+          error: 'לא נמצא תמחור פעיל עבור היישוב וסוג המכל הנבחרים',
+        };
+      }
+
+      // Check if it's a "multiple rows returned" error
+      if (pricingError.code === 'PGRST117') {
+        return {
+          success: false,
+          error:
+            'נמצאו מספר תמחורים פעילים עבור היישוב וסוג המכל הנבחרים. אנא פנה למנהל המערכת',
+        };
+      }
+
       return {
         success: false,
-        error: `לא נמצא תמחור פעיל עבור היישוב וסוג המכל הנבחרים: ${pricingError.message}`,
+        error: `שגיאה בחיפוש תמחור: ${pricingError.message}`,
       };
     }
 
     if (!pricing || !pricing.container_type) {
+      console.error('No pricing or container type found:', { pricing });
       return {
         success: false,
         error: 'לא נמצא תמחור פעיל עבור היישוב וסוג המכל הנבחרים',
       };
     }
+
+    console.log('Found pricing:', {
+      pricingId: pricing.id,
+      price: pricing.price,
+      containerSize: pricing.container_type.size,
+    });
 
     // Calculate unit price (price per m³)
     const unitPrice = pricing.price / pricing.container_type.size;
@@ -72,6 +103,10 @@ export async function getPriceForSettlementAndContainer(
       },
     };
   } catch (error) {
+    console.error(
+      'Unexpected error in getPriceForSettlementAndContainer:',
+      error
+    );
     return {
       success: false,
       error:
@@ -91,6 +126,12 @@ export async function calculateTotalPrice(
   volume: number
 ): Promise<PriceCalculationResult> {
   try {
+    console.log('Calculating total price:', {
+      settlementId,
+      containerTypeId,
+      volume,
+    });
+
     // Input validation
     if (volume <= 0) {
       return {
@@ -106,6 +147,7 @@ export async function calculateTotalPrice(
     );
 
     if (!pricingResult.success || !pricingResult.data) {
+      console.error('Pricing lookup failed:', pricingResult.error);
       return {
         success: false,
         error: pricingResult.error || 'לא נמצא תמחור',
@@ -113,6 +155,12 @@ export async function calculateTotalPrice(
     }
 
     const { pricing, unit_price } = pricingResult.data;
+
+    console.log('Pricing calculation details:', {
+      unitPrice: unit_price,
+      volume,
+      totalPrice: volume * unit_price,
+    });
 
     // Calculate total price
     const totalPrice = volume * unit_price;
@@ -127,6 +175,7 @@ export async function calculateTotalPrice(
       },
     };
   } catch (error) {
+    console.error('Error in calculateTotalPrice:', error);
     return {
       success: false,
       error:

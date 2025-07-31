@@ -65,21 +65,23 @@ const baseReportSchema = z.object({
     .nonnegative('נפח חייב להיות אי-שלילי')
     .max(100, 'נפח גדול מדי'),
   notes: z.string().max(1000, 'הערות ארוכות מדי').optional(),
-  image_url: z.string().url('כתובת תמונה לא תקינה').optional(),
-  image_public_id: z.string().max(255, 'מזהה תמונה ארוך מדי').optional(),
-  unit_price: z.number().nonnegative('מחיר יחידה חייב להיות אי-שלילי'),
-  currency: z.string().length(3, 'מטבע חייב להיות 3 תווים').default('ILS'),
+  image_url: z
+    .string()
+    .url('כתובת תמונה לא תקינה')
+    .optional()
+    .or(z.literal('')),
+  image_public_id: z
+    .string()
+    .max(255, 'מזהה תמונה ארוך מדי')
+    .optional()
+    .or(z.literal('')),
   notification_sent: z.boolean().default(false),
 });
 
-// Create schema with optional pricing fields (will be calculated automatically)
+// Create schema without pricing fields
 export const createReportSchema = baseReportSchema
-  .partial({ unit_price: true })
-  .extend({
-    total_price: z
-      .number()
-      .nonnegative('מחיר כולל חייב להיות אי-שלילי')
-      .optional(),
+  .partial({
+    notification_sent: true,
   })
   .refine((data) => {
     // If tank_id is provided, use it as container_type_id
@@ -117,8 +119,14 @@ export const reportFiltersSchema = paginationSchema.extend({
   driver_id: z.string().uuid('מזהה נהג לא תקין').optional(),
   tank_id: z.string().uuid('מזהה מכל לא תקין').optional(),
   settlement_id: z.string().uuid('מזהה יישוב לא תקין').optional(),
-  report_date_from: z.string().date('תאריך התחלה לא תקין').optional(),
-  report_date_to: z.string().date('תאריך סיום לא תקין').optional(),
+  report_date_from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'תאריך התחלה חייב להיות בפורמט YYYY-MM-DD')
+    .optional(),
+  report_date_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'תאריך סיום חייב להיות בפורמט YYYY-MM-DD')
+    .optional(),
   waste_type: z.enum(['green_waste', 'organic', 'mixed']).optional(),
   condition: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
 });

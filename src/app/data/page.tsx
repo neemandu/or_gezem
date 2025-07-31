@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HebrewSelect } from '@/components/ui/hebrew-select';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import {
   Dialog,
   DialogContent,
@@ -40,9 +41,6 @@ interface Report {
   volume: number;
   notes?: string;
   image_url?: string;
-  unit_price: number;
-  total_price: number;
-  currency: string;
   created_at: string;
   driver?: {
     id: string;
@@ -120,6 +118,17 @@ export default function DataPage() {
   useEffect(() => {
     loadReports();
   }, [filters, currentPage]);
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Cleanup function to prevent DOM manipulation errors
+      setReports([]);
+      setSettlements([]);
+      setContainerTypes([]);
+      setDrivers([]);
+    };
+  }, []);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -201,6 +210,11 @@ export default function DataPage() {
     setCurrentPage(1); // Reset to first page when filters change
   };
 
+  // Force re-render of select components when data changes
+  const selectKey = useMemo(() => {
+    return `${settlements.length}-${drivers.length}-${containerTypes.length}`;
+  }, [settlements.length, drivers.length, containerTypes.length]);
+
   const clearFilters = () => {
     setFilters({
       settlement_id: '',
@@ -220,10 +234,6 @@ export default function DataPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const formatPrice = (price: number, currency: string) => {
-    return `${price.toFixed(2)} ${currency}`;
   };
 
   if (isLoading) {
@@ -258,48 +268,41 @@ export default function DataPage() {
             <Filter className="h-4 w-4 text-gray-500" />
             <span className="font-medium text-gray-700">מסננים</span>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              {showFilters ? 'הסתר מסננים' : 'הצג מסננים'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              נקה מסננים
-            </Button>
-          </div>
         </div>
 
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>מתאריך</Label>
-              <Input
-                type="date"
-                value={filters.report_date_from}
-                onChange={(e) =>
-                  handleFilterChange('report_date_from', e.target.value)
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>עד תאריך</Label>
-              <Input
-                type="date"
-                value={filters.report_date_to}
-                onChange={(e) =>
-                  handleFilterChange('report_date_to', e.target.value)
-                }
-              />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>מתאריך</Label>
+            <Input
+              type="date"
+              value={filters.report_date_from}
+              onChange={(e) =>
+                handleFilterChange('report_date_from', e.target.value)
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>עד תאריך</Label>
+            <Input
+              type="date"
+              value={filters.report_date_to}
+              onChange={(e) =>
+                handleFilterChange('report_date_to', e.target.value)
+              }
+            />
+          </div>
 
-            {/* Settlement Filter (Admin only) */}
-            {hasRole('ADMIN') && (
-              <div className="space-y-2">
-                <Label>יישוב</Label>
+          {/* Settlement Filter (Admin only) */}
+          {hasRole('ADMIN') && (
+            <div className="space-y-2">
+              <Label>יישוב</Label>
+              <ErrorBoundary
+                onError={(error) => {
+                  console.error('Settlement filter error:', error);
+                }}
+              >
                 <HebrewSelect
+                  key={`settlement-${selectKey}`}
                   options={[
                     { value: 'all', label: 'כל היישובים' },
                     ...settlements.map((s) => ({ value: s.id, label: s.name })),
@@ -313,14 +316,21 @@ export default function DataPage() {
                   }
                   placeholder="בחר יישוב..."
                 />
-              </div>
-            )}
+              </ErrorBoundary>
+            </div>
+          )}
 
-            {/* Driver Filter (Admin only) */}
-            {hasRole('ADMIN') && (
-              <div className="space-y-2">
-                <Label>נהג</Label>
+          {/* Driver Filter (Admin only) */}
+          {hasRole('ADMIN') && (
+            <div className="space-y-2">
+              <Label>נהג</Label>
+              <ErrorBoundary
+                onError={(error) => {
+                  console.error('Driver filter error:', error);
+                }}
+              >
                 <HebrewSelect
+                  key={`driver-${selectKey}`}
                   options={[
                     { value: 'all', label: 'כל הנהגים' },
                     ...drivers.map((d) => ({ value: d.id, label: d.email })),
@@ -334,13 +344,20 @@ export default function DataPage() {
                   }
                   placeholder="בחר נהג..."
                 />
-              </div>
-            )}
+              </ErrorBoundary>
+            </div>
+          )}
 
-            {/* Container Type Filter */}
-            <div className="space-y-2">
-              <Label>סוג מכל</Label>
+          {/* Container Type Filter */}
+          <div className="space-y-2">
+            <Label>סוג מכל</Label>
+            <ErrorBoundary
+              onError={(error) => {
+                console.error('Container type filter error:', error);
+              }}
+            >
               <HebrewSelect
+                key={`container-${selectKey}`}
                 options={[
                   { value: 'all', label: 'כל סוגי המכלים' },
                   ...containerTypes.map((ct) => ({
@@ -354,9 +371,9 @@ export default function DataPage() {
                 }
                 placeholder="בחר סוג מכל..."
               />
-            </div>
+            </ErrorBoundary>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Results Summary */}
@@ -377,8 +394,6 @@ export default function DataPage() {
               <TableHead className="text-right">נהג</TableHead>
               <TableHead className="text-right">סוג מכל</TableHead>
               <TableHead className="text-right">נפח</TableHead>
-              <TableHead className="text-right">מחיר יחידה</TableHead>
-              <TableHead className="text-right">מחיר כולל</TableHead>
               <TableHead className="text-right">תמונה</TableHead>
               <TableHead className="text-right">הערות</TableHead>
             </TableRow>
@@ -387,7 +402,7 @@ export default function DataPage() {
             {reports.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={7}
                   className="text-center py-8 text-gray-500"
                 >
                   לא נמצאו דיווחים מתאימים
@@ -412,12 +427,6 @@ export default function DataPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {report.volume} מ&quot;ק
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatPrice(report.unit_price, report.currency)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatPrice(report.total_price, report.currency)}
                   </TableCell>
                   <TableCell className="text-right">
                     {report.image_url ? (

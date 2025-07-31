@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, Building, Users, Package, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,12 @@ interface TabItem {
   href: string;
   icon: React.ElementType;
   description: string;
+}
+
+interface QuickStats {
+  settlementsCount: number;
+  driversCount: number;
+  tanksCount: number;
 }
 
 const settingsTabs: TabItem[] = [
@@ -47,6 +53,31 @@ const settingsTabs: TabItem[] = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const [stats, setStats] = useState<QuickStats>({
+    settlementsCount: 0,
+    driversCount: 0,
+    tanksCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setStats(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handleTabClick = (href: string) => {
     router.push(href);
@@ -118,15 +149,21 @@ export default function SettingsPage() {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-primary">0</p>
+            <p className="text-2xl font-bold text-primary">
+              {loading ? '...' : stats.settlementsCount}
+            </p>
             <p className="text-sm text-text-secondary">יישובים פעילים</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">0</p>
+            <p className="text-2xl font-bold text-green-600">
+              {loading ? '...' : stats.driversCount}
+            </p>
             <p className="text-sm text-text-secondary">נהגים רשומים</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">0</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {loading ? '...' : stats.tanksCount}
+            </p>
             <p className="text-sm text-text-secondary">סוגי מכלים</p>
           </div>
         </div>

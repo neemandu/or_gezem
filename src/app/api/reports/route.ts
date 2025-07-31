@@ -7,7 +7,6 @@ import {
 } from '@/lib/api';
 import { createReportSchema, reportFiltersSchema } from '@/lib/validations';
 import { Report } from '@/types/api';
-import { calculateTotalPrice } from '@/lib/pricing-utils';
 import { createClient } from '@/lib/supabase/server';
 
 const reportsService = new CrudService<Report>('reports');
@@ -82,18 +81,13 @@ export const GET = apiHandler(async (request: NextRequest) => {
       throw new UnauthorizedError('תפקיד משתמש לא מוכר');
   }
 
+  const supabase = await createClient();
+
   // Apply additional filters
   if (tank_id) filters.container_type_id = tank_id; // Map tank_id to container_type_id
 
-  // Date range filtering (simplified - in production you'd use proper date range queries)
-  if (report_date_from) {
-    filters.report_date = report_date_from;
-  }
-
-  const supabase = await createClient();
-
-  // Get paginated results with relations
-  const { data: reports, error: reportsError } = await supabase
+  // Build date range query for created_at field
+  let dateRangeQuery = supabase
     .from('reports')
     .select(
       `
@@ -103,22 +97,50 @@ export const GET = apiHandler(async (request: NextRequest) => {
       container_type:container_types(id, name, size, unit)
     `
     )
-    .match(filters)
+    .match(filters);
+
+  // Apply date range filtering using created_at field
+  if (report_date_from) {
+    dateRangeQuery = dateRangeQuery.gte(
+      'created_at',
+      `${report_date_from}T00:00:00Z`
+    );
+  }
+  if (report_date_to) {
+    dateRangeQuery = dateRangeQuery.lte(
+      'created_at',
+      `${report_date_to}T23:59:59Z`
+    );
+  }
+
+  // Get paginated results with relations
+  const { data: reports, error: reportsError } = await dateRangeQuery
     .order('created_at', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
   if (reportsError) {
+    console.error('Error fetching reports:', reportsError);
     return {
       success: false,
       error: 'שגיאה בטעינת הדיווחים',
     };
   }
 
-  // Get total count for pagination
-  const { count, error: countError } = await supabase
+  // Get total count for pagination with same date filtering
+  let countQuery = supabase
     .from('reports')
     .select('*', { count: 'exact', head: true })
     .match(filters);
+
+  // Apply same date range filtering for count
+  if (report_date_from) {
+    countQuery = countQuery.gte('created_at', `${report_date_from}T00:00:00Z`);
+  }
+  if (report_date_to) {
+    countQuery = countQuery.lte('created_at', `${report_date_to}T23:59:59Z`);
+  }
+
+  const { count, error: countError } = await countQuery;
 
   if (countError) {
     console.error('Error getting reports count:', countError);
@@ -163,30 +185,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const validatedData = createReportSchema.parse(reportData);
 
-  // Automatically calculate pricing if not provided
-  if (!validatedData.unit_price || !validatedData.total_price) {
-    const pricingResult = await calculateTotalPrice(
-      validatedData.settlement_id,
-      validatedData.container_type_id,
-      validatedData.volume
-    );
-
-    if (!pricingResult.success) {
-      return {
-        success: false,
-        error: `שגיאה בחישוב מחיר: ${pricingResult.error}`,
-      };
-    }
-
-    // Update validated data with calculated pricing
-    validatedData.unit_price = pricingResult.data!.unit_price;
-    validatedData.total_price = pricingResult.data!.total_price;
-    validatedData.currency = pricingResult.data!.currency;
-  }
-
   const supabase = await createClient();
 
-  // Create report with pricing
+  // Create report
   const { data: newReport, error: createError } = await supabase
     .from('reports')
     .insert(validatedData)

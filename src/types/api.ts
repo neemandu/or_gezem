@@ -76,9 +76,6 @@ export interface Report extends BaseEntity {
   notes?: string;
   image_url?: string;
   image_public_id?: string;
-  unit_price: number;
-  total_price: number;
-  currency: string;
   notification_sent: boolean;
 
   // Optional populated relationships

@@ -114,6 +114,7 @@ export default function DriversPage({}: DriversPageProps) {
 
   // Handle form submission
   const handleFormSubmit = async (formData: any) => {
+    setLoading(true);
     try {
       setSubmitting(true);
       const url = editingDriver
@@ -165,6 +166,7 @@ export default function DriversPage({}: DriversPageProps) {
       throw error; // Re-throw to prevent modal from closing
     } finally {
       setSubmitting(false);
+      setLoading(false);
     }
   };
 

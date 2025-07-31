@@ -44,8 +44,8 @@ export function DriverFormModal({
       // Note: We can't get the password or other metadata from the API in edit mode
       setFormData({
         email: driver.email || '',
-        first_name: '',
-        last_name: '',
+        first_name: driver.first_name || '',
+        last_name: driver.last_name || '',
         phone: '',
         license_number: '',
         password: '', // Never pre-fill password for security

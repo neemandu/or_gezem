@@ -5,6 +5,7 @@ import { LogOut, User, Settings, BarChart3 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
+import Link from 'next/link';
 // import { getRoleDisplayName } from '@/lib/auth-utils';
 
 export default function DashboardPage() {
@@ -118,10 +119,13 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center space-x-3 space-x-reverse mb-4">
+            <Link
+              href="/data"
+              className="flex items-center space-x-3 space-x-reverse mb-4"
+            >
               <BarChart3 className="h-8 w-8 text-blue-600" />
               <h3 className="text-lg font-medium text-gray-900">דוחות</h3>
-            </div>
+            </Link>
             <p className="text-gray-600 text-sm mb-4">
               צפה בדוחות איסוף הפסולת הירוקה
             </p>
@@ -131,28 +135,18 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center space-x-3 space-x-reverse mb-4">
+            <Link
+              href="/settings"
+              className="flex items-center space-x-3 space-x-reverse mb-4"
+            >
               <Settings className="h-8 w-8 text-green-600" />
               <h3 className="text-lg font-medium text-gray-900">הגדרות</h3>
-            </div>
+            </Link>
             <p className="text-gray-600 text-sm mb-4">
               נהל את הגדרות החשבון והיישוב
             </p>
             <Button className="w-full" variant="outline">
               עריכת הגדרות
-            </Button>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center space-x-3 space-x-reverse mb-4">
-              <User className="h-8 w-8 text-purple-600" />
-              <h3 className="text-lg font-medium text-gray-900">פרופיל</h3>
-            </div>
-            <p className="text-gray-600 text-sm mb-4">
-              עדכן את הפרטים האישיים שלך
-            </p>
-            <Button className="w-full" variant="outline">
-              עריכת פרופיל
             </Button>
           </div>
         </div>

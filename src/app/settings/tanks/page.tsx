@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TanksTable } from '@/components/tanks-table';
 import { TankFormModal } from '@/components/tank-form-modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ContainerType } from '@/types/api';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -18,6 +19,7 @@ export default function TanksPage({}: TanksPageProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTank, setEditingTank] = useState<ContainerType | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTank, setDeletingTank] = useState<ContainerType | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -59,13 +61,20 @@ export default function TanksPage({}: TanksPageProps) {
     setIsModalOpen(true);
   };
 
-  // Handle delete tank
-  const handleDelete = async (tank: ContainerType) => {
+  // Handle delete tank - now opens confirmation dialog
+  const handleDelete = (tank: ContainerType) => {
     setDeletingTank(tank);
-    setDeleting(true);
+    setDeleteModalOpen(true);
+  };
+
+  // Handle confirm delete
+  const handleConfirmDelete = async () => {
+    if (!deletingTank) return;
 
     try {
-      const response = await fetch(`/api/tanks/${tank.id}`, {
+      setDeleting(true);
+
+      const response = await fetch(`/api/tanks/${deletingTank.id}`, {
         method: 'DELETE',
       });
 
@@ -76,7 +85,9 @@ export default function TanksPage({}: TanksPageProps) {
         description: 'המכל נמחק בהצלחה',
       });
 
-      fetchTanks();
+      await fetchTanks();
+      setDeleteModalOpen(false);
+      setDeletingTank(null);
     } catch (error) {
       console.error('Error deleting tank:', error);
       toast({
@@ -84,6 +95,8 @@ export default function TanksPage({}: TanksPageProps) {
         description: 'לא ניתן למחוק את המכל',
         variant: 'destructive',
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -170,6 +183,18 @@ export default function TanksPage({}: TanksPageProps) {
         onOpenChange={setIsModalOpen}
         tank={editingTank}
         onSubmit={handleFormSubmit}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDialog
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        onConfirm={handleConfirmDelete}
+        loading={deleting}
+        variant="destructive"
+        itemName={deletingTank?.name}
+        title="מחיקת מכל"
+        description={`האם אתה בטוח שברצונך למחוק את המכל "${deletingTank?.name}"? פעולה זו תמחק גם את כל הדוחות הקשורים למכל זה.`}
       />
     </div>
   );

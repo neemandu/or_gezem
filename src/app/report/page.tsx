@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { HebrewSelect } from '@/components/ui/hebrew-select';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { CameraInput, CameraInputRef } from '@/components/camera-input';
 import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -107,6 +108,7 @@ export default function ReportPage() {
 
   // Handle image upload
   const handleImageUploaded = (imageUrl: string, filePath: string) => {
+    console.log('Image uploaded:', { imageUrl, filePath });
     form.setValue('image_url', imageUrl);
     form.setValue('image_public_id', filePath);
     toast({
@@ -144,11 +146,27 @@ export default function ReportPage() {
         }
       }
 
+      console.log('Form data before processing:', data);
+
       // Add driver_id from current user
       const reportData = {
         ...data,
         driver_id: user?.id,
       };
+
+      // Clean up image fields - only include if they have non-empty values
+      if (!reportData.image_url || reportData.image_url.trim() === '') {
+        delete reportData.image_url;
+      }
+      if (
+        !reportData.image_public_id ||
+        reportData.image_public_id.trim() === ''
+      ) {
+        delete reportData.image_public_id;
+      }
+
+      console.log('Report data after cleanup:', reportData);
+      console.log('Sending report data:', reportData);
 
       const response = await fetch('/api/reports', {
         method: 'POST',
@@ -216,29 +234,6 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-md mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <MapPin className="h-6 w-6 text-green-600" />
-              <h1 className="text-lg font-semibold text-gray-900">
-                דיווח איסוף
-              </h1>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <LogOut className="h-4 w-4 ml-2" />
-              יציאה
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-md mx-auto px-4 py-6">
         {isLoadingData ? (
@@ -251,33 +246,39 @@ export default function ReportPage() {
             {/* Settlement Selection */}
             <div className="space-y-2">
               <Label htmlFor="settlement">יישוב *</Label>
-              <HebrewSelect
-                options={settlements.map((settlement) => ({
-                  value: settlement.id,
-                  label: settlement.name,
-                }))}
-                value={form.watch('settlement_id')}
-                onValueChange={(value) => form.setValue('settlement_id', value)}
-                placeholder="בחר יישוב..."
-                error={form.formState.errors.settlement_id?.message}
-              />
+              <ErrorBoundary>
+                <HebrewSelect
+                  options={settlements.map((settlement) => ({
+                    value: settlement.id,
+                    label: settlement.name,
+                  }))}
+                  value={form.watch('settlement_id')}
+                  onValueChange={(value) =>
+                    form.setValue('settlement_id', value)
+                  }
+                  placeholder="בחר יישוב..."
+                  error={form.formState.errors.settlement_id?.message}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Container Type Selection */}
             <div className="space-y-2">
               <Label htmlFor="container_type">סוג מכל *</Label>
-              <HebrewSelect
-                options={containerTypes.map((type) => ({
-                  value: type.id,
-                  label: `${type.name} (${type.size} ${type.unit})`,
-                }))}
-                value={form.watch('container_type_id')}
-                onValueChange={(value) =>
-                  form.setValue('container_type_id', value)
-                }
-                placeholder="בחר סוג מכל..."
-                error={form.formState.errors.container_type_id?.message}
-              />
+              <ErrorBoundary>
+                <HebrewSelect
+                  options={containerTypes.map((type) => ({
+                    value: type.id,
+                    label: `${type.name} (${type.size} ${type.unit})`,
+                  }))}
+                  value={form.watch('container_type_id')}
+                  onValueChange={(value) =>
+                    form.setValue('container_type_id', value)
+                  }
+                  placeholder="בחר סוג מכל..."
+                  error={form.formState.errors.container_type_id?.message}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Volume Input */}

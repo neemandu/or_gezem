@@ -192,6 +192,8 @@ export const CameraInput = forwardRef<CameraInputRef, CameraInputProps>(
             supabase
           );
 
+          console.log('Upload result:', result);
+
           if (!result.success) {
             // Provide more specific error messages
             let errorMessage = 'שגיאה בהעלאת התמונה';
@@ -210,7 +212,24 @@ export const CameraInput = forwardRef<CameraInputRef, CameraInputProps>(
 
           setUploadProgress({ progress: 100, status: 'success' });
           setIsImageUploaded(true);
-          onImageUploaded?.(result.data.publicUrl, result.data.filePath);
+
+          // Handle different response structures
+          let publicUrl = result.data.publicUrl;
+          let filePath = result.data.filePath;
+
+          // If the response has Key and Id structure (newer Supabase response)
+          if ('Key' in result.data && 'Id' in result.data) {
+            filePath = (result.data as any).Key;
+            // Construct public URL from the Key
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            publicUrl = `${supabaseUrl}/storage/v1/object/public/reports/${filePath}`;
+          }
+
+          console.log('Calling onImageUploaded with:', {
+            publicUrl,
+            filePath,
+          });
+          onImageUploaded?.(publicUrl, filePath);
           return true;
         } catch (error) {
           console.error('Upload error:', error);

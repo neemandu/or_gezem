@@ -1,30 +1,21 @@
 'use client';
 
-import * as React from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from './button';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error?: Error;
-  errorInfo?: React.ErrorInfo;
 }
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
-  fallback?: React.ComponentType<ErrorFallbackProps>;
+  fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
-  rtl?: boolean;
+  className?: string;
 }
 
-interface ErrorFallbackProps {
-  error?: Error;
-  resetError: () => void;
-  rtl?: boolean;
-}
-
-class ErrorBoundaryClass extends React.Component<
+class ErrorBoundary extends React.Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
@@ -34,42 +25,80 @@ class ErrorBoundaryClass extends React.Component<
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return {
-      hasError: true,
-      error,
-    };
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    this.setState({
-      error,
-      errorInfo,
-    });
+    // Log the error
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
 
-    // Log error to external service
-    if (this.props.onError) {
-      this.props.onError(error, errorInfo);
-    }
+    // Call the onError callback if provided
+    this.props.onError?.(error, errorInfo);
 
-    // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Check if it's a DOM manipulation error
+    if (
+      error.message.includes('removeChild') ||
+      error.message.includes('Failed to execute')
+    ) {
+      // For DOM errors, we can try to recover by resetting the error state
+      // after a short delay to allow the DOM to stabilize
+      setTimeout(() => {
+        this.setState({ hasError: false, error: undefined });
+      }, 100);
     }
   }
 
   resetError = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({ hasError: false, error: undefined });
   };
 
   render() {
     if (this.state.hasError) {
-      const FallbackComponent = this.props.fallback || DefaultErrorFallback;
+      // You can render any custom fallback UI
+      if (this.props.fallback) {
+        const FallbackComponent = this.props.fallback;
+        return (
+          <FallbackComponent
+            error={this.state.error}
+            resetError={this.resetError}
+          />
+        );
+      }
+
+      // Default fallback UI
       return (
-        <FallbackComponent
-          error={this.state.error}
-          resetError={this.resetError}
-          rtl={this.props.rtl}
-        />
+        <div
+          className={cn(
+            'p-4 border border-red-200 rounded-md bg-red-50',
+            this.props.className
+          )}
+        >
+          <div className="flex items-center space-x-2 text-red-800">
+            <svg
+              className="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span className="text-sm font-medium">שגיאה בטעינת הרכיב</span>
+          </div>
+          <p className="mt-2 text-sm text-red-700">
+            אירעה שגיאה בטעינת הרכיב. אנא נסה שוב.
+          </p>
+          <button
+            onClick={this.resetError}
+            className="mt-3 px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200 transition-colors"
+          >
+            נסה שוב
+          </button>
+        </div>
       );
     }
 
@@ -77,158 +106,20 @@ class ErrorBoundaryClass extends React.Component<
   }
 }
 
-// Default error fallback component with Hebrew text
-const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
-  rtl = true,
-}) => {
-  const goHome = () => {
-    window.location.href = '/';
-  };
-
-  const reloadPage = () => {
-    window.location.reload();
-  };
-
-  return (
-    <div
-      className={cn(
-        'min-h-screen bg-background flex items-center justify-center p-4',
-        rtl && 'text-right dir-rtl font-hebrew'
-      )}
-    >
-      <div className="max-w-md w-full text-center space-y-6">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-            <AlertTriangle className="w-8 h-8 text-destructive" />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            אופס! משהו השתבש
-          </h1>
-          <p className="text-muted-foreground">
-            אירעה שגיאה בלתי צפויה. אנו מתנצלים על התקלה.
-          </p>
-        </div>
-
-        {process.env.NODE_ENV === 'development' && error && (
-          <div
-            className={cn(
-              'bg-muted p-4 rounded-md text-left overflow-auto max-h-32',
-              rtl && 'text-left dir-ltr'
-            )}
-          >
-            <code className="text-sm text-muted-foreground">
-              {error.message}
-            </code>
-          </div>
-        )}
-
-        <div
-          className={cn('flex gap-3 justify-center', rtl && 'flex-row-reverse')}
-        >
-          <Button
-            onClick={resetError}
-            variant="default"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            נסה שוב
-          </Button>
-          <Button
-            onClick={reloadPage}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            רענן דף
-          </Button>
-          <Button
-            onClick={goHome}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Home className="w-4 h-4" />
-            דף הבית
-          </Button>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          אם הבעיה נמשכת, אנא פנה לתמיכה הטכנית
-        </p>
-      </div>
-    </div>
-  );
-};
-
-// Simple error fallback for smaller components
-const SimpleErrorFallback: React.FC<ErrorFallbackProps> = ({
-  error,
-  resetError,
-  rtl = true,
-}) => {
-  return (
-    <div
-      className={cn(
-        'bg-destructive/10 border border-destructive/20 rounded-md p-4 text-center',
-        rtl && 'text-right dir-rtl font-hebrew'
-      )}
-    >
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <AlertTriangle className="w-4 h-4 text-destructive" />
-        <span className="text-sm font-medium text-destructive">
-          שגיאה בטעינת הרכיב
-        </span>
-      </div>
-      <p className="text-xs text-muted-foreground mb-3">
-        אירעה שגיאה בטעינת התוכן
-      </p>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={resetError}
-        className="text-xs"
-      >
-        נסה שוב
-      </Button>
-    </div>
-  );
-};
-
-// Hook for handling async errors in components
-export const useErrorHandler = () => {
+// Hook for functional components to use error boundaries
+export function useErrorHandler() {
   const [error, setError] = React.useState<Error | null>(null);
+
+  const handleError = React.useCallback((error: Error) => {
+    console.error('Error caught by useErrorHandler:', error);
+    setError(error);
+  }, []);
 
   const resetError = React.useCallback(() => {
     setError(null);
   }, []);
 
-  const handleError = React.useCallback((error: Error) => {
-    setError(error);
-  }, []);
+  return { error, handleError, resetError };
+}
 
-  // Throw error to be caught by ErrorBoundary
-  if (error) {
-    throw error;
-  }
-
-  return { handleError, resetError };
-};
-
-// Wrapper component for easier usage
-export const ErrorBoundary: React.FC<ErrorBoundaryProps> = (props) => {
-  return <ErrorBoundaryClass {...props} />;
-};
-
-ErrorBoundary.displayName = 'ErrorBoundary';
-
-export {
-  ErrorBoundaryClass,
-  DefaultErrorFallback,
-  SimpleErrorFallback,
-  type ErrorBoundaryProps,
-  type ErrorFallbackProps,
-};
+export { ErrorBoundary };
